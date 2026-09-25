@@ -23,6 +23,7 @@ import {
   ShieldCheck,
   Clock,
   Sparkles,
+  Building2,
 } from "lucide-react";
 import { formatBDT, formatBdDate } from "@/lib/utils/bangladesh";
 
@@ -79,6 +80,11 @@ interface Customer {
   city: string | null;
   notes: string | null;
   tags: string[] | null;
+  tenant?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
   totalBookings: number;
   completedBookings: number;
   cancelledBookings: number;
@@ -152,6 +158,10 @@ export default function CustomersPage() {
   const debouncedSearch = useDebounce(search, 350);
   const [loading, setLoading] = useState(true);
 
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [businesses, setBusinesses] = useState<any[]>([]);
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string>("ALL");
+
   // Multi-select state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -204,7 +214,7 @@ export default function CustomersPage() {
   }
 
   const loadCustomers = useCallback(
-    async (searchTerm: string, pageNum: number) => {
+    async (searchTerm: string, pageNum: number, businessFilter = selectedBusinessId) => {
       if (abortRef.current) abortRef.current.abort();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -215,6 +225,7 @@ export default function CustomersPage() {
           page: String(pageNum),
           limit: "20",
           ...(searchTerm ? { search: searchTerm } : {}),
+          ...(businessFilter && businessFilter !== "ALL" ? { businessId: businessFilter } : {}),
         });
         const res = await fetch(`/api/v1/customers?${params}`, {
           signal: controller.signal,
@@ -224,6 +235,8 @@ export default function CustomersPage() {
         setCustomFieldDefs(data.customFieldDefs ?? []);
         setTotal(data.total ?? 0);
         setPages(data.pages ?? 1);
+        if (data.isSuperAdmin !== undefined) setIsSuperAdmin(data.isSuperAdmin);
+        if (data.businesses) setBusinesses(data.businesses);
       } catch (err: any) {
         if (err.name !== "AbortError") {
           console.error("Failed to load customers:", err);
@@ -232,12 +245,12 @@ export default function CustomersPage() {
         setLoading(false);
       }
     },
-    []
+    [selectedBusinessId]
   );
 
   useEffect(() => {
-    loadCustomers(debouncedSearch, page);
-  }, [debouncedSearch, page, loadCustomers]);
+    loadCustomers(debouncedSearch, page, selectedBusinessId);
+  }, [debouncedSearch, page, selectedBusinessId, loadCustomers]);
 
   useEffect(() => {
     setPage(1);
@@ -589,14 +602,22 @@ export default function CustomersPage() {
               <Users className="w-4 h-4 text-[#5B4712]" />
             </div>
             <div>
-              <h1 className="text-2xl font-extrabold text-[#181A1E] tracking-tight">
-                Customers & CRM 360
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-extrabold text-[#181A1E] tracking-tight">
+                  Customers & CRM 360
+                </h1>
+                {isSuperAdmin && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#E2F2FA] text-[#174A67] border border-[#C4E3F5] flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-[#174A67]" />
+                    Super User Unified
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-[#73767D]">
                 {total > 0 ? (
                   <>
                     <span className="font-bold text-[#181A1E]">{total}</span>{" "}
-                    customer{total !== 1 ? "s" : ""} · Click any customer for
+                    customer{total !== 1 ? "s" : ""}{isSuperAdmin ? " across all businesses" : ""} · Click any customer for
                     360° profile, booking history & custom fields
                   </>
                 ) : (
@@ -652,6 +673,50 @@ export default function CustomersPage() {
           </button>
         </div>
       </div>
+
+      {/* Super User Multi-Business Filter Bar */}
+      {(isSuperAdmin || businesses.length > 1) && (
+        <div className="bg-white p-3.5 rounded-2xl border border-[#EAEAEA] shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-[#E2F2FA] text-[#174A67] flex items-center justify-center shrink-0">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-[#181A1E]">Cross-Business CRM Filter:</span>
+              <span className="text-[11px] text-[#73767D] ml-1.5 hidden sm:inline">Viewing customers across multi-tenant businesses</span>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setSelectedBusinessId("ALL")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                selectedBusinessId === "ALL"
+                  ? "bg-[#181A1E] text-white shadow-sm"
+                  : "bg-[#F8F8FA] hover:bg-[#EAEAEA] text-[#73767D]"
+              }`}
+            >
+              <span>All Businesses</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[#E2F2FA] text-[#174A67]">Unified</span>
+            </button>
+            {businesses.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => setSelectedBusinessId(b.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                  selectedBusinessId === b.id
+                    ? "bg-[#181A1E] text-white shadow-sm"
+                    : "bg-[#F8F8FA] hover:bg-[#EAEAEA] text-[#73767D]"
+                }`}
+              >
+                <Building2 className="w-3 h-3 text-[#174A67]" />
+                <span>{b.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Floating Bulk CRM Actions Bar */}
       {selectedIds.length > 0 && (
@@ -841,9 +906,17 @@ export default function CustomersPage() {
                               {c.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p className="font-bold text-[#181A1E]">
-                                {c.name}
-                              </p>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="font-bold text-[#181A1E]">
+                                  {c.name}
+                                </p>
+                                {c.tenant && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E2F2FA] text-[#174A67] border border-[#C4E3F5]">
+                                    <Building2 className="w-2.5 h-2.5" />
+                                    {c.tenant.name}
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-[10px] text-[#73767D]">
                                 {c.email || c.city || "Dhaka"} ·{" "}
                                 <span className="uppercase font-semibold">
@@ -998,13 +1071,19 @@ export default function CustomersPage() {
                   {activeCustomer.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="text-lg font-extrabold text-[#181A1E]">
                       {activeCustomer.name}
                     </h2>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FBF3DC] text-[#5B4712] border border-[#F2E2B6]">
                       Customer 360°
                     </span>
+                    {activeCustomer.tenant && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E2F2FA] text-[#174A67] border border-[#C4E3F5]">
+                        <Building2 className="w-2.5 h-2.5" />
+                        {activeCustomer.tenant.name}
+                      </span>
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-3 text-xs text-[#73767D] mt-1">
                     <span className="flex items-center gap-1 font-mono">

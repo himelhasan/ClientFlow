@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { ThemeToggle } from "@/components/ThemeProvider";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -44,61 +45,394 @@ import {
   Smartphone,
 } from "lucide-react";
 
-const PRIMARY_TABS = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutGrid, exact: true },
-  { name: "Appointment", href: "/dashboard/bookings", icon: Calendar },
-  { name: "Enquiry", href: "/dashboard/leads", icon: UserSearch },
-  { name: "Services", href: "/dashboard/services", icon: Grid },
-  { name: "Inbox", href: "/dashboard/messages", icon: MessageSquare },
-];
+export interface NavItem {
+  name: string;
+  href: string;
+  icon: any;
+  desc?: string;
+  exact?: boolean;
+}
 
-const WORKSPACE_GROUPS = [
-  {
-    label: "CRM, Growth & Portal",
-    items: [
-      { name: "Customers & Bulk CRM", href: "/dashboard/customers", icon: Users, desc: "History, CSV import/export & prefs" },
-      { name: "Tasks & Follow-Ups", href: "/dashboard/tasks", icon: CheckSquare, desc: "Staff task board & SLA reminders" },
-      { name: "Packages & Coupons", href: "/dashboard/packages", icon: Gift, desc: "Memberships, bundles & promo codes" },
-      { name: "Email & Attribution", href: "/dashboard/campaigns", icon: Megaphone, desc: "Campaign broadcasts & multi-touch ROI" },
-      { name: "Reviews & Reputation", href: "/dashboard/reviews", icon: Star, desc: "Ratings, NPS & AI review responses" },
-      { name: "Quotes & Pay", href: "/dashboard/quotes", icon: FileText, desc: "Invoices, quotes & BDT ledger" },
-      { name: "Customer Portal", href: "/portal/glamour-studio", icon: ExternalLink, desc: "Self-serve client portal preview" },
-    ],
-  },
-  {
-    label: "Operations & Resources",
-    items: [
-      { name: "Services & Deposits", href: "/dashboard/services", icon: Grid, desc: "Group capacity & cancellation rules" },
-      { name: "Resources & Rooms", href: "/dashboard/resources", icon: Box, desc: "Rooms, equipment & bay booking" },
-      { name: "Waitlist Queue", href: "/dashboard/waitlist", icon: ListOrdered, desc: "Auto-slot offers & priority queue" },
-      { name: "Staff Members", href: "/dashboard/staff", icon: UserCheck, desc: "Team assignments & roles" },
-      { name: "Availability", href: "/dashboard/availability", icon: Clock, desc: "Working hours & slot rules" },
-      { name: "Multi-Location UI", href: "/dashboard/branches", icon: MapPin, desc: "Branch comparison & holidays" },
-    ],
-  },
-  {
-    label: "AI Suite & Loyalty",
-    items: [
-      { name: "AI Command Center", href: "/dashboard/ai", icon: Sparkles, desc: "AI Receptionist, Lead Scorer & AI Book" },
-      { name: "Loyalty & Gift Cards", href: "/dashboard/loyalty", icon: Award, desc: "Points tiers & digital gift cards" },
-      { name: "Advanced Automations", href: "/dashboard/automations", icon: Zap, desc: "Multi-step branching workflows" },
-      { name: "API Marketplace", href: "/dashboard/marketplace", icon: Plug, desc: "Developer keys, webhooks & apps" },
-      { name: "Embed & Forms", href: "/dashboard/forms", icon: FileCode, desc: "Booking widgets & lead forms" },
-      { name: "Analytics", href: "/dashboard/analytics", icon: BarChart2, desc: "Conversion & revenue reports" },
-    ],
-  },
-  {
-    label: "Platform & Governance",
-    items: [
-      { name: "Custom Fields", href: "/dashboard/custom-fields", icon: Sliders, desc: "Platform-wide schema primitives" },
-      { name: "Audit Timeline", href: "/dashboard/audit", icon: Activity, desc: "Unified activity & security diff log" },
-      { name: "Integrations", href: "/dashboard/integrations", icon: Plug, desc: "Meta Cloud, SMS & gateways" },
-      { name: "Alerts & Ledger", href: "/dashboard/notifications", icon: Bell, desc: "System logs & quota usage" },
-      { name: "Settings", href: "/dashboard/settings", icon: Settings, desc: "Business profile & billing" },
-      { name: "Super Admin", href: "/dashboard/admin", icon: ShieldCheck, desc: "Multi-tenant platform control" },
-    ],
-  },
-];
+export interface WorkspaceGroup {
+  label: string;
+  items: NavItem[];
+}
+
+export function getRoleBadge(role?: string) {
+  switch (role) {
+    case "SUPER_ADMIN":
+      return { label: "Super Admin", color: "bg-red-50 text-red-700 border-red-200" };
+    case "ADMIN":
+      return { label: "Admin", color: "bg-purple-50 text-purple-700 border-purple-200" };
+    case "BUSINESS_OWNER":
+      return { label: "Business Owner", color: "bg-amber-50 text-amber-700 border-amber-200" };
+    case "MANAGER":
+      return { label: "Branch Manager", color: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+    case "STAFF":
+      return { label: "Staff Member", color: "bg-blue-50 text-blue-700 border-blue-200" };
+    case "CUSTOMER":
+      return { label: "Customer", color: "bg-teal-50 text-teal-700 border-teal-200" };
+    default:
+      return { label: "Workspace Member", color: "bg-zinc-50 text-zinc-700 border-zinc-200" };
+  }
+}
+
+export function isRouteAllowed(role: string, pathname: string): boolean {
+  if (role === "SUPER_ADMIN") return true;
+  if (role === "CUSTOMER") return false;
+
+  if (pathname === "/dashboard") {
+    // Staff cannot access the executive overview; they work directly from their appointments calendar
+    if (role === "STAFF") return false;
+    return true;
+  }
+
+  if (role === "STAFF") {
+    const allowed = [
+      "/dashboard/bookings",
+      "/dashboard/tasks",
+      "/dashboard/messages",
+      "/dashboard/waitlist",
+      "/dashboard/services",
+      "/dashboard/availability",
+      "/dashboard/notifications",
+    ];
+    return allowed.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
+  }
+
+  if (role === "MANAGER") {
+    const forbidden = [
+      "/dashboard/admin",
+      "/dashboard/marketplace",
+      "/dashboard/custom-fields",
+      "/dashboard/campaigns",
+      "/dashboard/automations",
+      "/dashboard/integrations",
+      "/dashboard/settings",
+    ];
+    return !forbidden.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
+  }
+
+  if (role === "BUSINESS_OWNER") {
+    const forbidden = [
+      "/dashboard/admin",
+      "/dashboard/marketplace",
+      "/dashboard/custom-fields",
+    ];
+    return !forbidden.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
+  }
+
+  if (role === "ADMIN") {
+    const forbidden = ["/dashboard/admin"];
+    return !forbidden.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
+  }
+
+  return true;
+}
+
+export function getDefaultRouteForRole(role: string, portalSlug = "glamour-studio"): string {
+  if (role === "CUSTOMER") return `/portal/${portalSlug}`;
+  if (role === "STAFF") return "/dashboard/bookings";
+  return "/dashboard";
+}
+
+export function getPrimaryTabsForRole(role?: string): NavItem[] {
+  switch (role) {
+    case "SUPER_ADMIN":
+      return [
+        { name: "Dashboard", href: "/dashboard", icon: LayoutGrid, exact: true },
+        { name: "Super Admin", href: "/dashboard/admin", icon: ShieldCheck },
+        { name: "Unified CRM", href: "/dashboard/customers", icon: Users },
+        { name: "Appointment", href: "/dashboard/bookings", icon: Calendar },
+        { name: "Inbox", href: "/dashboard/messages", icon: MessageSquare },
+      ];
+    case "ADMIN":
+      return [
+        { name: "Dashboard", href: "/dashboard", icon: LayoutGrid, exact: true },
+        { name: "Appointment", href: "/dashboard/bookings", icon: Calendar },
+        { name: "Enquiry", href: "/dashboard/leads", icon: UserSearch },
+        { name: "Services", href: "/dashboard/services", icon: Grid },
+        { name: "Inbox", href: "/dashboard/messages", icon: MessageSquare },
+      ];
+    case "BUSINESS_OWNER":
+      return [
+        { name: "Dashboard", href: "/dashboard", icon: LayoutGrid, exact: true },
+        { name: "Appointment", href: "/dashboard/bookings", icon: Calendar },
+        { name: "Enquiry", href: "/dashboard/leads", icon: UserSearch },
+        { name: "Customers", href: "/dashboard/customers", icon: Users },
+        { name: "Inbox", href: "/dashboard/messages", icon: MessageSquare },
+      ];
+    case "MANAGER":
+      return [
+        { name: "Appointment", href: "/dashboard/bookings", icon: Calendar },
+        { name: "Enquiry", href: "/dashboard/leads", icon: UserSearch },
+        { name: "Customers", href: "/dashboard/customers", icon: Users },
+        { name: "Staff & Shifts", href: "/dashboard/staff", icon: UserCheck },
+        { name: "Inbox", href: "/dashboard/messages", icon: MessageSquare },
+      ];
+    case "STAFF":
+      return [
+        { name: "My Calendar", href: "/dashboard/bookings", icon: Calendar },
+        { name: "My Tasks", href: "/dashboard/tasks", icon: CheckSquare },
+        { name: "Client Messages", href: "/dashboard/messages", icon: MessageSquare },
+        { name: "Waitlist", href: "/dashboard/waitlist", icon: ListOrdered },
+        { name: "Services", href: "/dashboard/services", icon: Grid },
+      ];
+    default:
+      return [
+        { name: "Dashboard", href: "/dashboard", icon: LayoutGrid, exact: true },
+        { name: "Appointment", href: "/dashboard/bookings", icon: Calendar },
+        { name: "Enquiry", href: "/dashboard/leads", icon: UserSearch },
+        { name: "Services", href: "/dashboard/services", icon: Grid },
+        { name: "Inbox", href: "/dashboard/messages", icon: MessageSquare },
+      ];
+  }
+}
+
+export function getWorkspaceGroupsForRole(role?: string, portalSlug = "glamour-studio"): WorkspaceGroup[] {
+  if (role === "STAFF") {
+    return [
+      {
+        label: "My Execution & Schedule",
+        items: [
+          { name: "My Appointments", href: "/dashboard/bookings", icon: Calendar, desc: "My daily bookings & clients" },
+          { name: "My Assigned Tasks", href: "/dashboard/tasks", icon: CheckSquare, desc: "Follow-ups & client actions" },
+          { name: "Client Messages", href: "/dashboard/messages", icon: MessageSquare, desc: "Inbox & direct client chats" },
+          { name: "Live Waitlist", href: "/dashboard/waitlist", icon: ListOrdered, desc: "Walk-ins & priority queue" },
+          { name: "Services & Pricing", href: "/dashboard/services", icon: Grid, desc: "Service catalog & durations" },
+          { name: "My Working Hours", href: "/dashboard/availability", icon: Clock, desc: "Weekly shifts & break hours" },
+          { name: "Customer Portal", href: `/portal/${portalSlug}`, icon: ExternalLink, desc: "Client self-serve booking view" },
+          { name: "System Alerts", href: "/dashboard/notifications", icon: Bell, desc: "Booking alerts & notifications" },
+        ],
+      },
+    ];
+  }
+
+  if (role === "MANAGER") {
+    return [
+      {
+        label: "Operations & Floor",
+        items: [
+          { name: "Appointments Calendar", href: "/dashboard/bookings", icon: Calendar, desc: "Branch schedule & 2-way sync" },
+          { name: "Waitlist Queue", href: "/dashboard/waitlist", icon: ListOrdered, desc: "Walk-in queue & slot offers" },
+          { name: "Resources & Rooms", href: "/dashboard/resources", icon: Box, desc: "Rooms, chairs & bay allocation" },
+          { name: "Services & Deposits", href: "/dashboard/services", icon: Grid, desc: "Group capacity & deposit rules" },
+          { name: "Staff Members", href: "/dashboard/staff", icon: UserCheck, desc: "Roster, shifts & team on-duty" },
+          { name: "Availability", href: "/dashboard/availability", icon: Clock, desc: "Branch hours & slot rules" },
+          { name: "Multi-Location UI", href: "/dashboard/branches", icon: MapPin, desc: "Branch switcher & holidays" },
+        ],
+      },
+      {
+        label: "Front Desk & CRM",
+        items: [
+          { name: "Customers & CRM", href: "/dashboard/customers", icon: Users, desc: "Client profiles & booking history" },
+          { name: "Tasks & Follow-Ups", href: "/dashboard/tasks", icon: CheckSquare, desc: "Staff task board & reminders" },
+          { name: "Quotes & Pay", href: "/dashboard/quotes", icon: FileText, desc: "Invoices, estimates & ledger" },
+          { name: "Reviews & Reputation", href: "/dashboard/reviews", icon: Star, desc: "Ratings & AI review responses" },
+          { name: "Packages & Memberships", href: "/dashboard/packages", icon: Gift, desc: "Session bundles & promos" },
+          { name: "Customer Portal", href: `/portal/${portalSlug}`, icon: ExternalLink, desc: "Client self-service preview" },
+        ],
+      },
+      {
+        label: "Intelligence & Performance",
+        items: [
+          { name: "AI Command Center", href: "/dashboard/ai", icon: Sparkles, desc: "AI Receptionist & AI booking" },
+          { name: "Loyalty & Gift Cards", href: "/dashboard/loyalty", icon: Award, desc: "Reward points & gift cards" },
+          { name: "Analytics & Reports", href: "/dashboard/analytics", icon: BarChart2, desc: "Branch revenue & conversion" },
+          { name: "System Alerts", href: "/dashboard/notifications", icon: Bell, desc: "Operational activity logs" },
+        ],
+      },
+    ];
+  }
+
+  if (role === "BUSINESS_OWNER") {
+    return [
+      {
+        label: "CRM, Growth & Portal",
+        items: [
+          { name: "Customers & Bulk CRM", href: "/dashboard/customers", icon: Users, desc: "History, CSV import/export & prefs" },
+          { name: "Tasks & Follow-Ups", href: "/dashboard/tasks", icon: CheckSquare, desc: "Staff task board & SLA reminders" },
+          { name: "Packages & Coupons", href: "/dashboard/packages", icon: Gift, desc: "Memberships, bundles & promo codes" },
+          { name: "Email & Attribution", href: "/dashboard/campaigns", icon: Megaphone, desc: "Campaign broadcasts & multi-touch ROI" },
+          { name: "Reviews & Reputation", href: "/dashboard/reviews", icon: Star, desc: "Ratings, NPS & AI review responses" },
+          { name: "Quotes & Pay", href: "/dashboard/quotes", icon: FileText, desc: "Invoices, quotes & BDT ledger" },
+          { name: "Customer Portal", href: `/portal/${portalSlug}`, icon: ExternalLink, desc: "Self-serve client portal preview" },
+        ],
+      },
+      {
+        label: "Operations & Resources",
+        items: [
+          { name: "Services & Deposits", href: "/dashboard/services", icon: Grid, desc: "Group capacity & cancellation rules" },
+          { name: "Resources & Rooms", href: "/dashboard/resources", icon: Box, desc: "Rooms, equipment & bay booking" },
+          { name: "Waitlist Queue", href: "/dashboard/waitlist", icon: ListOrdered, desc: "Auto-slot offers & priority queue" },
+          { name: "Staff Members", href: "/dashboard/staff", icon: UserCheck, desc: "Team assignments & roles" },
+          { name: "Availability", href: "/dashboard/availability", icon: Clock, desc: "Working hours & slot rules" },
+          { name: "Multi-Location UI", href: "/dashboard/branches", icon: MapPin, desc: "Branch comparison & holidays" },
+        ],
+      },
+      {
+        label: "AI Suite & Loyalty",
+        items: [
+          { name: "AI Command Center", href: "/dashboard/ai", icon: Sparkles, desc: "AI Receptionist, Lead Scorer & AI Book" },
+          { name: "Loyalty & Gift Cards", href: "/dashboard/loyalty", icon: Award, desc: "Points tiers & digital gift cards" },
+          { name: "Advanced Automations", href: "/dashboard/automations", icon: Zap, desc: "Multi-step branching workflows" },
+          { name: "Embed & Forms", href: "/dashboard/forms", icon: FileCode, desc: "Booking widgets & lead forms" },
+          { name: "Analytics", href: "/dashboard/analytics", icon: BarChart2, desc: "Conversion & revenue reports" },
+        ],
+      },
+      {
+        label: "Business Setup & Config",
+        items: [
+          { name: "Integrations", href: "/dashboard/integrations", icon: Plug, desc: "Meta Cloud, SMS & gateways" },
+          { name: "Alerts & Ledger", href: "/dashboard/notifications", icon: Bell, desc: "System logs & quota usage" },
+          { name: "Settings", href: "/dashboard/settings", icon: Settings, desc: "Business profile & billing" },
+        ],
+      },
+    ];
+  }
+
+  if (role === "ADMIN") {
+    return [
+      {
+        label: "CRM, Growth & Portal",
+        items: [
+          { name: "Customers & Bulk CRM", href: "/dashboard/customers", icon: Users, desc: "History, CSV import/export & prefs" },
+          { name: "Tasks & Follow-Ups", href: "/dashboard/tasks", icon: CheckSquare, desc: "Staff task board & SLA reminders" },
+          { name: "Packages & Coupons", href: "/dashboard/packages", icon: Gift, desc: "Memberships, bundles & promo codes" },
+          { name: "Email & Attribution", href: "/dashboard/campaigns", icon: Megaphone, desc: "Campaign broadcasts & multi-touch ROI" },
+          { name: "Reviews & Reputation", href: "/dashboard/reviews", icon: Star, desc: "Ratings, NPS & AI review responses" },
+          { name: "Quotes & Pay", href: "/dashboard/quotes", icon: FileText, desc: "Invoices, quotes & BDT ledger" },
+          { name: "Customer Portal", href: `/portal/${portalSlug}`, icon: ExternalLink, desc: "Self-serve client portal preview" },
+        ],
+      },
+      {
+        label: "Operations & Resources",
+        items: [
+          { name: "Services & Deposits", href: "/dashboard/services", icon: Grid, desc: "Group capacity & cancellation rules" },
+          { name: "Resources & Rooms", href: "/dashboard/resources", icon: Box, desc: "Rooms, equipment & bay booking" },
+          { name: "Waitlist Queue", href: "/dashboard/waitlist", icon: ListOrdered, desc: "Auto-slot offers & priority queue" },
+          { name: "Staff Members", href: "/dashboard/staff", icon: UserCheck, desc: "Team assignments & roles" },
+          { name: "Availability", href: "/dashboard/availability", icon: Clock, desc: "Working hours & slot rules" },
+          { name: "Multi-Location UI", href: "/dashboard/branches", icon: MapPin, desc: "Branch comparison & holidays" },
+        ],
+      },
+      {
+        label: "AI Suite & Loyalty",
+        items: [
+          { name: "AI Command Center", href: "/dashboard/ai", icon: Sparkles, desc: "AI Receptionist, Lead Scorer & AI Book" },
+          { name: "Loyalty & Gift Cards", href: "/dashboard/loyalty", icon: Award, desc: "Points tiers & digital gift cards" },
+          { name: "Advanced Automations", href: "/dashboard/automations", icon: Zap, desc: "Multi-step branching workflows" },
+          { name: "API Marketplace", href: "/dashboard/marketplace", icon: Plug, desc: "Developer keys, webhooks & apps" },
+          { name: "Embed & Forms", href: "/dashboard/forms", icon: FileCode, desc: "Booking widgets & lead forms" },
+          { name: "Analytics", href: "/dashboard/analytics", icon: BarChart2, desc: "Conversion & revenue reports" },
+        ],
+      },
+      {
+        label: "Platform & Governance",
+        items: [
+          { name: "Custom Fields", href: "/dashboard/custom-fields", icon: Sliders, desc: "Platform-wide schema primitives" },
+          { name: "Audit Timeline", href: "/dashboard/audit", icon: Activity, desc: "Unified activity & security diff log" },
+          { name: "Integrations", href: "/dashboard/integrations", icon: Plug, desc: "Meta Cloud, SMS & gateways" },
+          { name: "Alerts & Ledger", href: "/dashboard/notifications", icon: Bell, desc: "System logs & quota usage" },
+          { name: "Settings", href: "/dashboard/settings", icon: Settings, desc: "Business profile & billing" },
+        ],
+      },
+    ];
+  }
+
+  // SUPER_ADMIN (Platform Host)
+  return [
+    {
+      label: "Platform & Multi-Tenant",
+      items: [
+        { name: "Super Admin Host", href: "/dashboard/admin", icon: ShieldCheck, desc: "Unified platform & tenant control" },
+        { name: "Unified CRM 360", href: "/dashboard/customers", icon: Users, desc: "Cross-business customer profiles" },
+        { name: "Custom Fields", href: "/dashboard/custom-fields", icon: Sliders, desc: "Platform-wide schema primitives" },
+        { name: "Audit Timeline", href: "/dashboard/audit", icon: Activity, desc: "Unified activity & security diff log" },
+        { name: "API Marketplace", href: "/dashboard/marketplace", icon: Plug, desc: "Developer keys, webhooks & apps" },
+        { name: "Platform Settings", href: "/dashboard/settings", icon: Settings, desc: "Platform settings & billing" },
+      ],
+    },
+    {
+      label: "CRM, Growth & Portal",
+      items: [
+        { name: "Tasks & Follow-Ups", href: "/dashboard/tasks", icon: CheckSquare, desc: "Staff task board & SLA reminders" },
+        { name: "Packages & Coupons", href: "/dashboard/packages", icon: Gift, desc: "Memberships, bundles & promo codes" },
+        { name: "Email & Attribution", href: "/dashboard/campaigns", icon: Megaphone, desc: "Campaign broadcasts & multi-touch ROI" },
+        { name: "Reviews & Reputation", href: "/dashboard/reviews", icon: Star, desc: "Ratings, NPS & AI review responses" },
+        { name: "Quotes & Pay", href: "/dashboard/quotes", icon: FileText, desc: "Invoices, quotes & BDT ledger" },
+        { name: "Customer Portal", href: `/portal/${portalSlug}`, icon: ExternalLink, desc: "Self-serve client portal preview" },
+      ],
+    },
+    {
+      label: "Operations & Resources",
+      items: [
+        { name: "Services & Deposits", href: "/dashboard/services", icon: Grid, desc: "Group capacity & cancellation rules" },
+        { name: "Resources & Rooms", href: "/dashboard/resources", icon: Box, desc: "Rooms, equipment & bay booking" },
+        { name: "Waitlist Queue", href: "/dashboard/waitlist", icon: ListOrdered, desc: "Auto-slot offers & priority queue" },
+        { name: "Staff Members", href: "/dashboard/staff", icon: UserCheck, desc: "Team assignments & roles" },
+        { name: "Availability", href: "/dashboard/availability", icon: Clock, desc: "Working hours & slot rules" },
+        { name: "Multi-Location UI", href: "/dashboard/branches", icon: MapPin, desc: "Branch comparison & holidays" },
+      ],
+    },
+    {
+      label: "AI Suite & Intelligence",
+      items: [
+        { name: "AI Command Center", href: "/dashboard/ai", icon: Sparkles, desc: "AI Receptionist, Lead Scorer & AI Book" },
+        { name: "Loyalty & Gift Cards", href: "/dashboard/loyalty", icon: Award, desc: "Points tiers & digital gift cards" },
+        { name: "Advanced Automations", href: "/dashboard/automations", icon: Zap, desc: "Multi-step branching workflows" },
+        { name: "Embed & Forms", href: "/dashboard/forms", icon: FileCode, desc: "Booking widgets & lead forms" },
+        { name: "Analytics", href: "/dashboard/analytics", icon: BarChart2, desc: "Conversion & revenue reports" },
+        { name: "Integrations & SMS", href: "/dashboard/integrations", icon: Plug, desc: "Meta Cloud, SMS & gateways" },
+      ],
+    },
+  ];
+}
+
+export function getQuickProfileLinksForRole(role?: string, portalSlug = "glamour-studio") {
+  switch (role) {
+    case "SUPER_ADMIN":
+      return [
+        { name: "Customer Portal Preview", href: `/portal/${portalSlug}`, icon: ExternalLink },
+        { name: "Super Admin Platform", href: "/dashboard/admin", icon: ShieldCheck },
+        { name: "Unified Cross-Business CRM", href: "/dashboard/customers", icon: Users },
+        { name: "API Marketplace & Webhooks", href: "/dashboard/marketplace", icon: Plug },
+        { name: "Audit & Activity Timeline", href: "/dashboard/audit", icon: Activity },
+        { name: "Platform Settings", href: "/dashboard/settings", icon: Settings },
+      ];
+    case "ADMIN":
+      return [
+        { name: "Customer Self-Serve Portal", href: `/portal/${portalSlug}`, icon: ExternalLink },
+        { name: "API Marketplace & Webhooks", href: "/dashboard/marketplace", icon: Plug },
+        { name: "Audit & Activity Timeline", href: "/dashboard/audit", icon: Activity },
+        { name: "Workspace Settings", href: "/dashboard/settings", icon: Settings },
+      ];
+    case "BUSINESS_OWNER":
+      return [
+        { name: "Customer Self-Serve Portal", href: `/portal/${portalSlug}`, icon: ExternalLink },
+        { name: "Integrations & SMS", href: "/dashboard/integrations", icon: Plug },
+        { name: "Workspace Settings", href: "/dashboard/settings", icon: Settings },
+      ];
+    case "MANAGER":
+      return [
+        { name: "Customer Self-Serve Portal", href: `/portal/${portalSlug}`, icon: ExternalLink },
+        { name: "Staff Shifts & Roster", href: "/dashboard/staff", icon: UserCheck },
+        { name: "Multi-Location UI", href: "/dashboard/branches", icon: MapPin },
+        { name: "AI Command Center", href: "/dashboard/ai", icon: Sparkles },
+      ];
+    case "STAFF":
+      return [
+        { name: "Customer Self-Serve Portal", href: `/portal/${portalSlug}`, icon: ExternalLink },
+        { name: "My Working Hours", href: "/dashboard/availability", icon: Clock },
+        { name: "My Follow-up Tasks", href: "/dashboard/tasks", icon: CheckSquare },
+      ];
+    default:
+      return [
+        { name: "Customer Self-Serve Portal", href: `/portal/${portalSlug}`, icon: ExternalLink },
+        { name: "Workspace Settings", href: "/dashboard/settings", icon: Settings },
+      ];
+  }
+}
 
 export default function DashboardLayout({
   children,
@@ -220,6 +554,30 @@ export default function DashboardLayout({
     setShowPwaBanner(false);
   }
 
+  // Route access authorization guard & Customer portal redirect
+  useEffect(() => {
+    if (loading || !session?.user) return;
+
+    const role = session.user.role || "BUSINESS_OWNER";
+    const slug = session?.business?.slug || "glamour-studio";
+
+    // 1. If role is CUSTOMER, redirect immediately to customer self-serve portal
+    if (role === "CUSTOMER") {
+      router.replace(`/portal/${slug}`);
+      return;
+    }
+
+    // 2. Check route authorization against role permissions
+    if (!isRouteAllowed(role, pathname)) {
+      const fallback = getDefaultRouteForRole(role, slug);
+      toast.error(
+        `Access restricted: ${getRoleBadge(role).label} is not permitted to access ${pathname}. Redirecting to your workspace.`,
+        { id: "role-guard" }
+      );
+      router.replace(fallback);
+    }
+  }, [loading, session, pathname, router]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F8F8F6] flex items-center justify-center">
@@ -231,12 +589,19 @@ export default function DashboardLayout({
     );
   }
 
-  const allSecondaryItems = WORKSPACE_GROUPS.flatMap((g) => g.items);
+  const userRole = session?.user?.role || "BUSINESS_OWNER";
+  const portalSlug = session?.business?.slug || "glamour-studio";
+  const primaryTabs = getPrimaryTabsForRole(userRole);
+  const workspaceGroups = getWorkspaceGroupsForRole(userRole, portalSlug);
+  const allSecondaryItems = workspaceGroups.flatMap((g) => g.items);
   const activeSecondaryItem = allSecondaryItems.find(
     (item) =>
-      !PRIMARY_TABS.some((pt) => pt.href === item.href) &&
+      !primaryTabs.some((pt) => pt.href === item.href) &&
       pathname.startsWith(item.href)
   );
+
+  const roleBadge = getRoleBadge(userRole);
+  const quickLinks = getQuickProfileLinksForRole(userRole, portalSlug);
 
   const activeBranchName =
     selectedBranchId === "ALL"
@@ -250,8 +615,6 @@ export default function DashboardLayout({
     session?.business?.email ||
     session?.business?.phone ||
     "";
-
-  const portalSlug = session?.business?.slug || "workspace";
 
   return (
     <div className="min-h-screen bg-[#F8F8F6] text-[#181A1E] flex flex-col pb-16 md:pb-0">
@@ -347,7 +710,7 @@ export default function DashboardLayout({
 
           {/* Centered Horizontal Navigation Pills */}
           <nav className="hidden md:flex items-center gap-2">
-            {PRIMARY_TABS.map((tab) => {
+            {primaryTabs.map((tab) => {
               const isActive = tab.exact
                 ? pathname === tab.href
                 : pathname.startsWith(tab.href);
@@ -400,8 +763,8 @@ export default function DashboardLayout({
               </button>
 
               {moreOpen && (
-                <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-[800px] max-w-[95vw] bg-white rounded-[20px] border border-[#EAEAEA] shadow-[0_12px_32px_-8px_rgba(24,24,27,0.08)] p-6 z-50 grid grid-cols-2 lg:grid-cols-4 gap-5 max-h-[80vh] overflow-y-auto">
-                  {WORKSPACE_GROUPS.map((group) => (
+                <div className={`absolute left-1/2 -translate-x-1/2 mt-2 w-[800px] max-w-[95vw] bg-white rounded-[20px] border border-[#EAEAEA] shadow-[0_12px_32px_-8px_rgba(24,24,27,0.08)] p-6 z-50 grid grid-cols-1 sm:grid-cols-2 ${workspaceGroups.length >= 4 ? "lg:grid-cols-4" : workspaceGroups.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-2"} gap-5 max-h-[80vh] overflow-y-auto`}>
+                  {workspaceGroups.map((group) => (
                     <div key={group.label} className="space-y-2">
                       <p className="px-2 text-[10px] font-semibold uppercase tracking-wider text-[#73767D]">
                         {group.label}
@@ -487,9 +850,14 @@ export default function DashboardLayout({
                   <User className="w-4 h-4 text-white fill-white/80 translate-y-0.5" strokeWidth={1.75} />
                 </div>
                 <div className="hidden sm:block min-w-0 pr-1">
-                  <p className="text-[12.5px] font-semibold text-[#181A1E] leading-tight truncate max-w-[128px]">
-                    {userName}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[12.5px] font-semibold text-[#181A1E] leading-tight truncate max-w-[110px]">
+                      {userName}
+                    </p>
+                    <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold border ${roleBadge.color}`}>
+                      {roleBadge.label}
+                    </span>
+                  </div>
                   {userEmail && (
                     <p className="text-[11px] text-[#73767D] leading-tight truncate max-w-[128px] mt-0.5">
                       {userEmail}
@@ -511,46 +879,31 @@ export default function DashboardLayout({
                           <p className="text-xs font-semibold text-[#181A1E] truncate">
                             {session.business.name}
                           </p>
-                          <Badge variant="default" className="text-[9px] px-2 py-0">
-                            {session.business.subscriptionPlan || "Starter"}
-                          </Badge>
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold border ${roleBadge.color}`}>
+                            {roleBadge.label}
+                          </span>
                         </div>
                         <p className="text-[11px] text-[#73767D] truncate mt-0.5">
-                          {session.business.category} · {activeBranchName}
+                          {session.business.category || "Health & Beauty"} · {activeBranchName}
                         </p>
                       </div>
                     </div>
                   )}
 
                   <div className="space-y-1">
-                    <Link
-                      href={`/portal/${portalSlug}`}
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#262930] hover:bg-[#F3F1E8]"
-                    >
-                      <ExternalLink className="w-4 h-4 text-[#73767D]" strokeWidth={1.75} />
-                      Customer Self-Serve Portal
-                    </Link>
-                    <Link
-                      href="/dashboard/marketplace"
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#262930] hover:bg-[#F3F1E8]"
-                    >
-                      <Plug className="w-4 h-4 text-[#73767D]" strokeWidth={1.75} />
-                      API Marketplace &amp; Webhooks
-                    </Link>
-                    <Link
-                      href="/dashboard/audit"
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#262930] hover:bg-[#F3F1E8]"
-                    >
-                      <Activity className="w-4 h-4 text-[#73767D]" strokeWidth={1.75} />
-                      Audit &amp; Activity Timeline
-                    </Link>
-                    <Link
-                      href="/dashboard/settings"
-                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#262930] hover:bg-[#F3F1E8]"
-                    >
-                      <Settings className="w-4 h-4 text-[#73767D]" strokeWidth={1.75} />
-                      Workspace Settings
-                    </Link>
+                    {quickLinks.map((ql) => {
+                      const Icon = ql.icon;
+                      return (
+                        <Link
+                          key={ql.name}
+                          href={ql.href}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#262930] hover:bg-[#F3F1E8]"
+                        >
+                          <Icon className="w-4 h-4 text-[#73767D]" strokeWidth={1.75} />
+                          <span>{ql.name}</span>
+                        </Link>
+                      );
+                    })}
                   </div>
 
                   <div className="pt-2 border-t border-[#EAEAEA] flex items-center justify-between gap-2">
@@ -609,7 +962,7 @@ export default function DashboardLayout({
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-b border-[#EAEAEA] px-4 py-4 space-y-4 max-h-[75vh] overflow-y-auto">
             <div className="grid grid-cols-2 gap-2">
-              {PRIMARY_TABS.map((tab) => {
+              {primaryTabs.map((tab) => {
                 const isActive = tab.exact
                   ? pathname === tab.href
                   : pathname.startsWith(tab.href);
@@ -671,7 +1024,7 @@ export default function DashboardLayout({
 
       {/* Mobile Bottom Navigation Bar */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-[#EAEAEA] flex items-center justify-around h-16 px-2">
-        {PRIMARY_TABS.map((tab) => {
+        {primaryTabs.map((tab) => {
           const isActive = tab.exact
             ? pathname === tab.href
             : pathname.startsWith(tab.href);

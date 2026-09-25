@@ -710,4 +710,190 @@ runTest("Validates secure password reset token expiration window (1 hour)", () =
   assert.equal(isTokenValid(validToken, now + 65 * 60 * 1000), false); // 65 mins later: expired
 });
 
-console.log("\n🎉 All 28 ClientFlow automated platform & feature tests passed cleanly!");
+// 29. MANAGER Role Permissions & Operational Scope
+runTest("Enforces MANAGER role capabilities and boundary restrictions", () => {
+  type Role = "SUPER_ADMIN" | "ADMIN" | "BUSINESS_OWNER" | "MANAGER" | "STAFF" | "CUSTOMER";
+
+  const permissions: Record<Role, string[]> = {
+    SUPER_ADMIN: ["platform:all", "tenants:cross_view", "dev:marketplace", "governance:custom_fields", "settings:manage"],
+    ADMIN: ["business:manage", "calendar:manage", "staff:manage", "dev:marketplace", "governance:custom_fields", "settings:manage"],
+    BUSINESS_OWNER: ["business:manage", "calendar:manage", "staff:manage", "revenue:manage", "settings:manage"],
+    MANAGER: ["calendar:manage", "waitlist:manage", "resources:manage", "staff:shifts", "customers:crm", "quotes:manage", "reviews:manage"],
+    STAFF: ["calendar:view", "calendar:update_status", "tasks:manage", "messages:chat"],
+    CUSTOMER: ["portal:access", "booking:self", "reviews:write"],
+  };
+
+  const canPerform = (role: Role, action: string) => permissions[role].includes(action);
+
+  // MANAGER can manage appointments, resources, staff shifts, CRM, quotes and reviews
+  assert.equal(canPerform("MANAGER", "calendar:manage"), true);
+  assert.equal(canPerform("MANAGER", "resources:manage"), true);
+  assert.equal(canPerform("MANAGER", "staff:shifts"), true);
+  assert.equal(canPerform("MANAGER", "customers:crm"), true);
+  assert.equal(canPerform("MANAGER", "quotes:manage"), true);
+
+  // MANAGER cannot access Super Admin platform host, raw developer API keys, custom fields primitives, or global settings
+  assert.equal(canPerform("MANAGER", "platform:all"), false);
+  assert.equal(canPerform("MANAGER", "dev:marketplace"), false);
+  assert.equal(canPerform("MANAGER", "governance:custom_fields"), false);
+  assert.equal(canPerform("MANAGER", "settings:manage"), false);
+});
+
+// 30. Role-Based Navigation & Route Access Matrix across all 6 Roles
+runTest("Validates route protection matrix and default route resolution for all 6 roles", () => {
+  const isRouteAllowed = (role: string, pathname: string): boolean => {
+    if (role === "SUPER_ADMIN") return true;
+    if (role === "CUSTOMER") return false;
+
+    if (pathname === "/dashboard") {
+      if (role === "STAFF") return false;
+      return true;
+    }
+
+    if (role === "STAFF") {
+      const allowed = [
+        "/dashboard/bookings",
+        "/dashboard/tasks",
+        "/dashboard/messages",
+        "/dashboard/waitlist",
+        "/dashboard/services",
+        "/dashboard/availability",
+        "/dashboard/notifications",
+      ];
+      return allowed.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
+    }
+
+    if (role === "MANAGER") {
+      const forbidden = [
+        "/dashboard/admin",
+        "/dashboard/marketplace",
+        "/dashboard/custom-fields",
+        "/dashboard/campaigns",
+        "/dashboard/automations",
+        "/dashboard/integrations",
+        "/dashboard/settings",
+      ];
+      return !forbidden.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
+    }
+
+    if (role === "BUSINESS_OWNER") {
+      const forbidden = [
+        "/dashboard/admin",
+        "/dashboard/marketplace",
+        "/dashboard/custom-fields",
+      ];
+      return !forbidden.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
+    }
+
+    if (role === "ADMIN") {
+      const forbidden = ["/dashboard/admin"];
+      return !forbidden.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
+    }
+
+    return true;
+  };
+
+  const getDefaultRoute = (role: string, slug = "glamour-studio") => {
+    if (role === "CUSTOMER") return `/portal/${slug}`;
+    if (role === "STAFF") return "/dashboard/bookings";
+    return "/dashboard";
+  };
+
+  // SUPER_ADMIN can access everything
+  assert.equal(isRouteAllowed("SUPER_ADMIN", "/dashboard/admin"), true);
+  assert.equal(isRouteAllowed("SUPER_ADMIN", "/dashboard/marketplace"), true);
+  assert.equal(isRouteAllowed("SUPER_ADMIN", "/dashboard/custom-fields"), true);
+
+  // ADMIN can access marketplace and custom fields, but NOT super admin console
+  assert.equal(isRouteAllowed("ADMIN", "/dashboard/admin"), false);
+  assert.equal(isRouteAllowed("ADMIN", "/dashboard/marketplace"), true);
+  assert.equal(isRouteAllowed("ADMIN", "/dashboard/custom-fields"), true);
+
+  // BUSINESS_OWNER can access business settings, but NOT super admin or dev marketplace
+  assert.equal(isRouteAllowed("BUSINESS_OWNER", "/dashboard/admin"), false);
+  assert.equal(isRouteAllowed("BUSINESS_OWNER", "/dashboard/marketplace"), false);
+  assert.equal(isRouteAllowed("BUSINESS_OWNER", "/dashboard/settings"), true);
+
+  // MANAGER can access bookings, customers, staff, resources, quotes, but NOT admin/settings/marketplace
+  assert.equal(isRouteAllowed("MANAGER", "/dashboard/bookings"), true);
+  assert.equal(isRouteAllowed("MANAGER", "/dashboard/customers"), true);
+  assert.equal(isRouteAllowed("MANAGER", "/dashboard/staff"), true);
+  assert.equal(isRouteAllowed("MANAGER", "/dashboard/resources"), true);
+  assert.equal(isRouteAllowed("MANAGER", "/dashboard/quotes"), true);
+  assert.equal(isRouteAllowed("MANAGER", "/dashboard/admin"), false);
+  assert.equal(isRouteAllowed("MANAGER", "/dashboard/marketplace"), false);
+  assert.equal(isRouteAllowed("MANAGER", "/dashboard/settings"), false);
+  assert.equal(isRouteAllowed("MANAGER", "/dashboard/campaigns"), false);
+
+  // STAFF can only access operational pages, NOT executive overview, settings, or staff admin
+  assert.equal(isRouteAllowed("STAFF", "/dashboard"), false);
+  assert.equal(isRouteAllowed("STAFF", "/dashboard/staff"), false);
+  assert.equal(isRouteAllowed("STAFF", "/dashboard/settings"), false);
+  assert.equal(isRouteAllowed("STAFF", "/dashboard/bookings"), true);
+  assert.equal(isRouteAllowed("STAFF", "/dashboard/tasks"), true);
+  assert.equal(isRouteAllowed("STAFF", "/dashboard/messages"), true);
+  assert.equal(isRouteAllowed("STAFF", "/dashboard/waitlist"), true);
+
+  // CUSTOMER cannot access any /dashboard route
+  assert.equal(isRouteAllowed("CUSTOMER", "/dashboard"), false);
+  assert.equal(isRouteAllowed("CUSTOMER", "/dashboard/bookings"), false);
+
+  // Default routes
+  assert.equal(getDefaultRoute("CUSTOMER"), "/portal/glamour-studio");
+  assert.equal(getDefaultRoute("STAFF"), "/dashboard/bookings");
+  assert.equal(getDefaultRoute("MANAGER"), "/dashboard");
+  assert.equal(getDefaultRoute("BUSINESS_OWNER"), "/dashboard");
+  assert.equal(getDefaultRoute("ADMIN"), "/dashboard");
+  assert.equal(getDefaultRoute("SUPER_ADMIN"), "/dashboard");
+});
+
+// 31. Super User Unified Multi-Business CRM Filtering & Origin Tagging
+runTest("Filters unified customers across businesses and applies business origin tags", () => {
+  interface MockCustomer {
+    id: string;
+    name: string;
+    phone: string;
+    tenant: { id: string; name: string; slug: string };
+  }
+
+  const allCustomers: MockCustomer[] = [
+    { id: "c1", name: "Farhana Ahmed", phone: "01711005500", tenant: { id: "b1", name: "Glamour Studio HQ", slug: "glamour-studio" } },
+    { id: "c2", name: "Sabrina Karim", phone: "01711223344", tenant: { id: "b1", name: "Glamour Studio HQ", slug: "glamour-studio" } },
+    { id: "c3", name: "Tanvir Hossain", phone: "01811556677", tenant: { id: "b2", name: "Apex Dental Clinic", slug: "apex-dental" } },
+    { id: "c4", name: "Nusrat Jahan", phone: "01911998877", tenant: { id: "b3", name: "Luxe Wellness Spa", slug: "luxe-spa" } },
+  ];
+
+  // Super User querying without businessId filter (returns all unified across businesses)
+  const getCustomers = (role: string, businessIdFilter: string = "ALL") => {
+    if (role === "SUPER_ADMIN") {
+      if (businessIdFilter === "ALL") return allCustomers;
+      return allCustomers.filter((c) => c.tenant.id === businessIdFilter);
+    }
+    // Tenant-isolated regular user (only sees their own tenant, e.g. b1)
+    return allCustomers.filter((c) => c.tenant.id === "b1");
+  };
+
+  // Super Admin view: Unified across all businesses
+  const superUserUnified = getCustomers("SUPER_ADMIN", "ALL");
+  assert.equal(superUserUnified.length, 4);
+
+  // Verify business origin tag exists on every customer
+  assert.equal(superUserUnified[0].tenant.name, "Glamour Studio HQ");
+  assert.equal(superUserUnified[2].tenant.name, "Apex Dental Clinic");
+  assert.equal(superUserUnified[3].tenant.name, "Luxe Wellness Spa");
+
+  // Super Admin filtered by specific business
+  const apexCustomers = getCustomers("SUPER_ADMIN", "b2");
+  assert.equal(apexCustomers.length, 1);
+  assert.equal(apexCustomers[0].name, "Tanvir Hossain");
+
+  // Non-super-admin user is strictly tenant-isolated
+  const regularOwnerCustomers = getCustomers("BUSINESS_OWNER", "ALL");
+  assert.equal(regularOwnerCustomers.length, 2);
+  assert.deepEqual(
+    regularOwnerCustomers.map((c) => c.tenant.id),
+    ["b1", "b1"]
+  );
+});
+
+console.log("\n🎉 All 31 ClientFlow automated platform & feature tests passed cleanly!");

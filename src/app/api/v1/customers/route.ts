@@ -18,6 +18,7 @@ const FALLBACK_CUSTOMERS = [
     completedBookings: 4,
     cancelledBookings: 0,
     totalRevenue: 14500,
+    tenant: { id: "biz-1", name: "Glamour Studio HQ", slug: "glamour-studio-hq" },
     optInWhatsapp: true,
     optInSms: true,
     optInEmail: true,
@@ -105,6 +106,7 @@ const FALLBACK_CUSTOMERS = [
     completedBookings: 2,
     cancelledBookings: 1,
     totalRevenue: 8400,
+    tenant: { id: "biz-2", name: "Dhaka Care Clinic", slug: "dhaka-care" },
     optInWhatsapp: true,
     optInSms: false,
     optInEmail: true,
@@ -230,9 +232,17 @@ export async function GET(req: Request) {
       customFieldDefs = FALLBACK_CUSTOM_FIELD_DEFS;
     }
 
-    const where: Record<string, any> = {
-      tenantId: session.tenantId,
-    };
+    const isSuperAdmin = session.role === "SUPER_ADMIN";
+    const businessFilter = searchParams.get("businessId")?.trim();
+
+    const where: Record<string, any> = {};
+    if (isSuperAdmin) {
+      if (businessFilter && businessFilter !== "ALL") {
+        where.tenantId = businessFilter;
+      }
+    } else {
+      where.tenantId = session.tenantId;
+    }
 
     if (search) {
       where.OR = [
@@ -254,6 +264,13 @@ export async function GET(req: Request) {
           take: limit,
           orderBy: { createdAt: "desc" },
           include: {
+            tenant: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
             _count: {
               select: {
                 leads: true,
@@ -298,7 +315,9 @@ export async function GET(req: Request) {
           const customerIds = customers.map((c) => c.id);
           const cfValues = await prisma.customFieldValue.findMany({
             where: {
-              tenantId: session.tenantId,
+              ...(isSuperAdmin && (!businessFilter || businessFilter === "ALL")
+                ? {}
+                : { tenantId: where.tenantId || session.tenantId }),
               entityType: "CUSTOMER",
               entityId: { in: customerIds },
             },
@@ -347,6 +366,9 @@ export async function GET(req: Request) {
       }
     } catch {
       customers = FALLBACK_CUSTOMERS.filter((c) => {
+        if (businessFilter && businessFilter !== "ALL" && c.tenant?.id !== businessFilter) {
+          return false;
+        }
         if (!search) return true;
         const q = search.toLowerCase();
         return (
@@ -367,12 +389,30 @@ export async function GET(req: Request) {
 
     const pages = Math.max(1, Math.ceil(total / limit));
 
+    let allBusinesses: any[] = [];
+    if (isSuperAdmin) {
+      try {
+        allBusinesses = await prisma.business.findMany({
+          select: { id: true, name: true, slug: true },
+          orderBy: { name: "asc" },
+        });
+      } catch (_) {}
+      if (allBusinesses.length === 0) {
+        allBusinesses = [
+          { id: "biz-1", name: "Glamour Studio HQ", slug: "glamour-studio-hq" },
+          { id: "biz-2", name: "Dhaka Care Clinic", slug: "dhaka-care" },
+        ];
+      }
+    }
+
     return NextResponse.json({
       customers,
       total,
       page,
       pages,
       customFieldDefs,
+      isSuperAdmin,
+      businesses: allBusinesses,
     });
   } catch (error: any) {
     return NextResponse.json(

@@ -36,6 +36,15 @@ const DEMO_ROLES = [
     color: "bg-amber-50 text-amber-700 border-amber-200",
   },
   {
+    role: "MANAGER",
+    label: "Branch Manager",
+    email: "manager@glamourstudio.com",
+    name: "Kamrul Hassan",
+    phone: "01711006600",
+    icon: UserCheck,
+    color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
+  {
     role: "STAFF",
     label: "Staff Member",
     email: "stylist@glamourstudio.com",
@@ -164,6 +173,8 @@ export default function LoginPage() {
         window.location.href = `/portal/${data.business?.slug || "glamour-studio"}`;
       } else if (demo.role === "SUPER_ADMIN") {
         window.location.href = "/dashboard/admin";
+      } else if (demo.role === "STAFF") {
+        window.location.href = "/dashboard/bookings";
       } else {
         window.location.href = "/dashboard";
       }
