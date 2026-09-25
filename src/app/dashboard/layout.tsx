@@ -10,6 +10,7 @@ import {
   Target,
   Briefcase,
   FileCode,
+  FileText,
   LogOut,
   ChevronRight,
   Loader2,
@@ -17,6 +18,9 @@ import {
   Zap,
   Clock,
   UserCheck,
+  MessageSquare,
+  BarChart2,
+  Settings,
 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -62,10 +66,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Bookings", href: "/dashboard/bookings", icon: Calendar },
     { name: "Leads", href: "/dashboard/leads", icon: Target },
     { name: "Customers", href: "/dashboard/customers", icon: Users },
+    { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
+    { name: "Quotes & Pay", href: "/dashboard/quotes", icon: FileText },
     { name: "Services", href: "/dashboard/services", icon: Briefcase },
     { name: "Staff", href: "/dashboard/staff", icon: UserCheck },
     { name: "Availability", href: "/dashboard/availability", icon: Clock },
-    { name: "Embed & Forms", href: "/dashboard/forms", icon: FileCode },
+    { name: "Forms", href: "/dashboard/forms", icon: FileCode },
+    { name: "Automations", href: "/dashboard/automations", icon: Zap },
+    { name: "Analytics", href: "/dashboard/analytics", icon: BarChart2 },
+    { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
   return (
@@ -100,7 +109,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Navigation Items */}
         <nav className="flex-1 px-3 space-y-1 py-2">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive =
+              item.href === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
               <Link
