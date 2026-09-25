@@ -1,0 +1,853 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  BUSINESS_OWNER
+  STAFF
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  RESCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  REJECTED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  QUOTE_SENT
+  BOOKING_PENDING
+  BOOKED
+  COMPLETED
+  LOST
+  CANCELLED
+}
+
+enum LeadSource {
+  WEBSITE
+  FACEBOOK
+  INSTAGRAM
+  WHATSAPP
+  GOOGLE
+  QR_CODE
+  SMS
+  PHONE
+  MANUAL
+  OTHER
+}
+
+enum MessageChannel {
+  WHATSAPP
+  SMS
+  EMAIL
+  FACEBOOK
+  INSTAGRAM
+  WEBSITE
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageType {
+  TRANSACTIONAL
+  AUTHENTICATION
+  MARKETING
+  CUSTOMER_SERVICE
+}
+
+enum MessageStatus {
+  QUEUED
+  SENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  VIEWED
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+// -------------------------------------------------------------
+// Core User & Authentication
+// -------------------------------------------------------------
+model User {
+  id            String         @id @default(cuid())
+  email         String?        @unique
+  phone         String?        @unique
+  normalizedPhone String?
+  passwordHash  String
+  name          String
+  role          UserRole       @default(BUSINESS_OWNER)
+  businessUsers BusinessUser[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+  staffProfiles Staff[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([email])
+  @@index([phone])
+}
+
+// -------------------------------------------------------------
+// Business (Tenant)
+// -------------------------------------------------------------
+model Business {
+  id              String         @id @default(cuid())
+  name            String
+  slug            String         @unique
+  category        String         @default("Other")
+  description     String?
+  phone           String
+  normalizedPhone String
+  whatsapp        String?
+  email           String?
+  address         String?
+  city            String?        @default("Dhaka")
+  website         String?
+  logo            String?
+  timezone        String         @default("Asia/Dhaka")
+  currency        String         @default("BDT")
+  activeModules   Json?
+
+  // Quota & Billing model (Section 68)
+  subscriptionPlan String        @default("Starter")
+  billingCycle    String         @default("monthly")
+  leadQuota       Int            @default(50)
+  leadsUsed       Int            @default(0)
+  whatsappQuota   Int            @default(150)
+  whatsappUsed    Int            @default(0)
+  smsQuota        Int            @default(100)
+  smsUsed         Int            @default(0)
+  emailQuota      Int            @default(150)
+  emailUsed       Int            @default(0)
+  status          String         @default("ACTIVE") // ACTIVE, SUSPENDED, TRIAL
+
+  // Relations
+  users           BusinessUser[]
+  branches        Branch[]
+  services        Service[]
+  staff           Staff[]
+  availability    Availability[]
+  holidays        Holiday[]
+  forms           Form[]
+  formSubmissions FormSubmission[]
+  customers       Customer[]
+  leads           Lead[]
+  bookings        Booking[]
+  quotes          Quote[]
+  payments        Payment[]
+  conversations   Conversation[]
+  messages        Message[]
+  automations     Automation[]
+  notifications   Notification[]
+  integrations    Integration[]
+  webhooks        Webhook[]
+  usageRecords    UsageRecord[]
+  subscriptions   Subscription[]
+  auditLogs       AuditLog[]
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([slug])
+  @@index([normalizedPhone])
+  @@index([status])
+}
+
+model BusinessUser {
+  id          String    @id @default(cuid())
+  tenantId    String
+  tenant      Business  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        UserRole  @default(STAFF)
+  permissions Json?     // Array of granular permissions
+  branchId    String?
+  branch      Branch?   @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  status      String    @default("ACTIVE")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+}
+
+model Branch {
+  id           String         @id @default(cuid())
+  tenantId     String
+  tenant       Business       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name         String
+  address      String?
+  phone        String?
+  isMain       Boolean        @default(false)
+  status       String         @default("ACTIVE")
+  services     Service[]
+  staff        Staff[]
+  businessUsers BusinessUser[]
+  bookings     Booking[]
+  availability Availability[]
+  holidays     Holiday[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([tenantId])
+}
+
+// -------------------------------------------------------------
+// Services, Staff & Availability
+// -------------------------------------------------------------
+model Service {
+  id                 String         @id @default(cuid())
+  tenantId           String
+  tenant             Business       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branchId           String?
+  branch             Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  name               String
+  description        String?
+  durationMinutes    Int            @default(30)
+  price              Decimal        @default(0.0)
+  pricingModel       String         @default("FIXED") // FIXED, STARTING_FROM, FREE, REQUEST_QUOTE, CUSTOM
+  bufferTimeMinutes  Int            @default(0)
+  category           String?
+  isActive           Boolean        @default(true)
+  staffAssignments   StaffService[]
+  bookings           Booking[]
+  quotes             Quote[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+}
+
+model Staff {
+  id           String         @id @default(cuid())
+  tenantId     String
+  tenant       Business       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  branchId     String?
+  branch       Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  name         String
+  photo        String?
+  phone        String?
+  email        String?
+  role         String?
+  status       String         @default("ACTIVE")
+  services     StaffService[]
+  bookings     Booking[]
+  availability Availability[]
+  holidays     Holiday[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model StaffService {
+  id        String   @id @default(cuid())
+  tenantId  String
+  staffId   String
+  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([staffId, serviceId])
+  @@index([tenantId])
+  @@index([staffId])
+  @@index([serviceId])
+}
+
+model Availability {
+  id           String   @id @default(cuid())
+  tenantId     String
+  tenant       Business @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staffId      String?
+  staff        Staff?   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  branchId     String?
+  branch       Branch?  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  dayOfWeek    Int      // 0 = Sunday, 1 = Monday, ..., 6 = Saturday (Bangladesh: Friday=5, Saturday=6)
+  startTime    String   // "09:00"
+  endTime      String   // "18:00"
+  isWorkingDay Boolean  @default(true)
+  breakStart   String?  // "13:00"
+  breakEnd     String?  // "14:00"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, staffId])
+  @@index([tenantId, dayOfWeek])
+}
+
+model Holiday {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Business @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staffId   String?
+  staff     Staff?   @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, startDate, endDate])
+}
+
+// -------------------------------------------------------------
+// Form Engine & Submissions
+// -------------------------------------------------------------
+model Form {
+  id           String           @id @default(cuid())
+  tenantId     String
+  tenant       Business         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name         String
+  slug         String
+  type         String           @default("APPOINTMENT") // APPOINTMENT, SERVICE_REQUEST, QUOTE_REQUEST, CONTACT, CUSTOM
+  title        String
+  description  String?
+  isMultiStep  Boolean          @default(false)
+  steps        Json?            // Array of steps for multi-step
+  config       Json?            // General form settings
+  designConfig Json?            // Colors, fonts, layout, button styling
+  status       String           @default("PUBLISHED") // DRAFT, PUBLISHED, DISABLED
+  version      Int              @default(1)
+  viewCount    Int              @default(0)
+  startCount   Int              @default(0)
+  submitCount  Int              @default(0)
+  fields       FormField[]
+  submissions  FormSubmission[]
+  leads        Lead[]
+  bookings     Booking[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model FormField {
+  id           String   @id @default(cuid())
+  tenantId     String
+  formId       String
+  form         Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  fieldId      String   // e.g. "customer_phone", "service_choice"
+  type         String   // text, phone, whatsapp, email, service_selector, staff_selector, date_time, etc.
+  label        String
+  placeholder  String?
+  required     Boolean  @default(false)
+  defaultValue String?
+  helpText     String?
+  validation   Json?
+  conditions   Json?    // IF/THEN visibility logic
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([formId])
+  @@index([formId, order])
+}
+
+model FormSubmission {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Business @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  formId      String
+  form        Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  leadId      String?
+  data        Json     // Submitted fields payload
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  referrer    String?
+  userAgent   String?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([formId])
+  @@index([customerId])
+  @@index([createdAt])
+}
+
+// -------------------------------------------------------------
+// CRM: Customers, Leads & Bookings
+// -------------------------------------------------------------
+model Customer {
+  id                String           @id @default(cuid())
+  tenantId          String
+  tenant            Business         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name              String
+  phone             String
+  normalizedPhone   String
+  whatsapp          String?
+  email             String?
+  address           String?
+  city              String?
+  notes             String?
+  tags              Json?            // ["VIP", "Frequent", etc.]
+  totalBookings     Int              @default(0)
+  completedBookings Int              @default(0)
+  cancelledBookings Int              @default(0)
+  totalRevenue      Decimal          @default(0.0)
+  leads             Lead[]
+  bookings          Booking[]
+  quotes            Quote[]
+  payments          Payment[]
+  conversations     Conversation[]
+  submissions       FormSubmission[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([tenantId, normalizedPhone])
+  @@index([tenantId])
+  @@index([tenantId, normalizedPhone])
+  @@index([tenantId, email])
+}
+
+model Lead {
+  id              String         @id @default(cuid())
+  tenantId        String
+  tenant          Business       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerId      String
+  customer        Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  formId          String?
+  form            Form?          @relation(fields: [formId], references: [id], onDelete: SetNull)
+  source          LeadSource     @default(WEBSITE)
+  status          LeadStatus     @default(NEW)
+  title           String?
+  notes           String?
+  value           Decimal?
+  assignedStaffId String?
+  // Messaging quota counters for this specific lead (Section 68)
+  whatsappSent    Int            @default(0)
+  smsSent         Int            @default(0)
+  emailsSent      Int            @default(0)
+  events          LeadEvent[]
+  bookings        Booking[]
+  quotes          Quote[]
+  messages        Message[]
+  usageRecords    UsageRecord[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, source])
+  @@index([tenantId, customerId])
+  @@index([createdAt])
+}
+
+model LeadEvent {
+  id          String   @id @default(cuid())
+  tenantId    String
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type        String   // "STATUS_CHANGE", "NOTE_ADDED", "MESSAGE_SENT", etc.
+  description String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([leadId])
+  @@index([createdAt])
+}
+
+model Booking {
+  id                 String        @id @default(cuid())
+  tenantId           String
+  tenant             Business      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bookingNumber      String        // e.g. #1042
+  customerId         String
+  customer           Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  serviceId          String
+  service            Service       @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  staffId            String?
+  staff              Staff?        @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  branchId           String?
+  branch             Branch?       @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  formId             String?
+  form               Form?         @relation(fields: [formId], references: [id], onDelete: SetNull)
+  leadId             String?
+  lead               Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  status             BookingStatus @default(PENDING)
+  date               DateTime      // Appointment date
+  startTime          String        // "15:00"
+  endTime            String        // "15:30"
+  durationMinutes    Int           @default(30)
+  price              Decimal       @default(0.0)
+  notes              String?
+  cancellationReason String?
+  rescheduledFromId  String?
+  events             BookingEvent[]
+  payments           Payment[]
+  messages           Message[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, date])
+  @@index([tenantId, staffId, date])
+  @@index([tenantId, customerId])
+}
+
+model BookingEvent {
+  id          String   @id @default(cuid())
+  tenantId    String
+  bookingId   String
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  type        String   // "CREATED", "CONFIRMED", "REMINDER_SENT", "RESCHEDULED", "COMPLETED", "CANCELLED"
+  description String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([bookingId])
+  @@index([createdAt])
+}
+
+// -------------------------------------------------------------
+// Quotes & Payments
+// -------------------------------------------------------------
+model Quote {
+  id          String      @id @default(cuid())
+  tenantId    String
+  tenant      Business    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quoteNumber String      // e.g. Q-1001
+  customerId  String
+  customer    Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  leadId      String?
+  lead        Lead?       @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  serviceId   String?
+  service     Service?    @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  status      QuoteStatus @default(DRAFT)
+  totalAmount Decimal     @default(0.0)
+  currency    String      @default("BDT")
+  validUntil  DateTime?
+  notes       String?
+  items       QuoteItem[]
+  payments    Payment[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model QuoteItem {
+  id          String   @id @default(cuid())
+  tenantId    String
+  quoteId     String
+  quote       Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int      @default(1)
+  unitPrice   Decimal  @default(0.0)
+  amount      Decimal  @default(0.0)
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([quoteId])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  tenantId      String
+  tenant        Business      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bookingId     String?
+  booking       Booking?      @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  quoteId       String?
+  quote         Quote?        @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  amount        Decimal       @default(0.0)
+  currency      String        @default("BDT")
+  provider      String        @default("CASH") // BKASH, NAGAD, SSLCOMMERZ, STRIPE, CASH
+  transactionId String?
+  status        PaymentStatus @default(PENDING)
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([transactionId])
+}
+
+// -------------------------------------------------------------
+// Unified Inbox & Messaging
+// -------------------------------------------------------------
+model Conversation {
+  id            String         @id @default(cuid())
+  tenantId      String
+  tenant        Business       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerId    String
+  customer      Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  channel       MessageChannel @default(WHATSAPP)
+  externalId    String?        // Meta thread ID, WhatsApp phone, etc.
+  unreadCount   Int            @default(0)
+  lastMessageAt DateTime       @default(now())
+  messages      Message[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, channel])
+  @@index([tenantId, customerId])
+  @@index([lastMessageAt])
+}
+
+model Message {
+  id                String           @id @default(cuid())
+  tenantId          String
+  tenant            Business         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversationId    String?
+  conversation      Conversation?    @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  leadId            String?
+  lead              Lead?            @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  bookingId         String?
+  booking           Booking?         @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  direction         MessageDirection @default(OUTBOUND)
+  channel           MessageChannel   @default(WHATSAPP)
+  messageType       MessageType      @default(TRANSACTIONAL)
+  content           String
+  templateId        String?
+  status            MessageStatus    @default(QUEUED)
+  providerMessageId String?
+  failureReason     String?
+  cost              Decimal?
+  currency          String           @default("BDT")
+  idempotencyKey    String?          @unique
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  readAt            DateTime?
+  createdAt         DateTime         @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, channel])
+  @@index([tenantId, status])
+  @@index([idempotencyKey])
+  @@index([createdAt])
+}
+
+// -------------------------------------------------------------
+// Automations & Background Execution
+// -------------------------------------------------------------
+model Automation {
+  id         String          @id @default(cuid())
+  tenantId   String
+  tenant     Business        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name       String
+  trigger    String          // BOOKING_CREATED, BOOKING_CONFIRMED, 24H_BEFORE, 2H_BEFORE, etc.
+  conditions Json?           // Filter conditions
+  actions    Json            // Array of actions (Send WhatsApp, Send SMS, Wait, etc.)
+  isActive   Boolean         @default(true)
+  runs       AutomationRun[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@index([trigger])
+}
+
+model AutomationRun {
+  id           String     @id @default(cuid())
+  tenantId     String
+  automationId String
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  triggerEvent String
+  status       String     @default("PENDING") // PENDING, RUNNING, SUCCESS, FAILED
+  logs         Json?
+  startedAt    DateTime   @default(now())
+  completedAt  DateTime?
+
+  @@index([tenantId])
+  @@index([automationId])
+  @@index([status])
+}
+
+// -------------------------------------------------------------
+// Integrations, Webhooks & Notifications
+// -------------------------------------------------------------
+model Integration {
+  id          String             @id @default(cuid())
+  tenantId    String
+  tenant      Business           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  provider    String             // WHATSAPP_META, FACEBOOK_PAGE, INSTAGRAM_BUSINESS, SMS_GATEWAY, EMAIL_RESEND
+  credentials Json               // Encrypted or structured credentials
+  config      Json?
+  status      String             @default("ACTIVE")
+  events      IntegrationEvent[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([tenantId, provider])
+  @@index([tenantId])
+}
+
+model IntegrationEvent {
+  id            String      @id @default(cuid())
+  tenantId      String
+  integrationId String
+  integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  eventType     String
+  payload       Json
+  status        String      @default("PROCESSED")
+  error         String?
+  createdAt     DateTime    @default(now())
+
+  @@index([tenantId])
+  @@index([integrationId])
+}
+
+model Webhook {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Business @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  url       String
+  secret    String
+  events    Json     // Array of subscribed events
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Business @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  type      String   // NEW_LEAD, NEW_BOOKING, CANCELLATION, QUOTA_ALERT, FAILED_AUTOMATION
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  link      String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, isRead])
+  @@index([createdAt])
+}
+
+// -------------------------------------------------------------
+// Plans, Subscriptions & Usage Ledger (Section 68)
+// -------------------------------------------------------------
+model Plan {
+  id              String         @id @default(cuid())
+  name            String         // Starter, Business, Pro, Enterprise
+  slug            String         @unique
+  priceMonthly    Decimal        @default(500.0)
+  leadAllowance   Int            @default(50)
+  whatsappPerLead Int            @default(3)
+  smsPerLead      Int            @default(2)
+  emailPerLead    Int            @default(3)
+  features        Json?
+  isPopular       Boolean        @default(false)
+  isActive        Boolean        @default(true)
+  subscriptions   Subscription[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Subscription {
+  id                 String    @id @default(cuid())
+  tenantId           String
+  tenant             Business  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planId             String
+  plan               Plan      @relation(fields: [planId], references: [id], onDelete: Restrict)
+  status             String    @default("ACTIVE")
+  currentPeriodStart DateTime  @default(now())
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([planId])
+}
+
+model UsageRecord {
+  id           String         @id @default(cuid())
+  tenantId     String
+  tenant       Business       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leadId       String?
+  lead         Lead?          @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  channel      MessageChannel
+  messageType  MessageType
+  quantity     Int            @default(1)
+  provider     String         // META_CLOUD, BULK_SMS_BD, RESEND, etc.
+  providerCost Decimal        @default(0.0)
+  currency     String         @default("BDT")
+  metadata     Json?
+  createdAt    DateTime       @default(now())
+
+  @@index([tenantId])
+  @@index([leadId])
+  @@index([tenantId, channel])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Business @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String   // CREATE, UPDATE, DELETE, LOGIN, EXPORT
+  entity    String   // Booking, Form, Service, Customer, etc.
+  entityId  String?
+  oldData   Json?
+  newData   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}

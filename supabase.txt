@@ -1,0 +1,8 @@
+password: l96G5F8SYTd##ZIm
+
+postgresql://postgres:[YOUR-PASSWORD]@db.phsiawenrgkzxxhrgtlm.supabase.co:5432/postgres
+
+host=db.phsiawenrgkzxxhrgtlm.supabase.co
+port=5432
+database=postgres
+user=postgres
