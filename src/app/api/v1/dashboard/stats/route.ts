@@ -214,9 +214,10 @@ export async function GET() {
       staff,
     });
   } catch (error: any) {
+    const isAuthError = error.message === "UNAUTHORIZED" || error.message === "NO_TENANT_FOUND";
     return NextResponse.json(
       { error: error.message || "Failed to load dashboard statistics" },
-      { status: 500 }
+      { status: isAuthError ? 401 : 500 }
     );
   }
 }
