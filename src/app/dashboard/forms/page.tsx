@@ -73,6 +73,7 @@ interface Form {
   status: string;
   viewCount: number;
   submitCount: number;
+  designConfig?: any;
   fields: FormField[];
   _count?: { submissions: number; bookings: number; leads: number };
 }
@@ -235,6 +236,15 @@ function FormBuilder({
   const [title, setTitle] = useState(form?.title || "");
   const [description, setDescription] = useState(form?.description || "");
   const [type, setType] = useState(form?.type || "APPOINTMENT");
+  const [primaryColor, setPrimaryColor] = useState(
+    form?.designConfig?.primaryColor || "#059669"
+  );
+  const [borderRadius, setBorderRadius] = useState(
+    form?.designConfig?.borderRadius || "12px"
+  );
+  const [buttonText, setButtonText] = useState(
+    form?.designConfig?.buttonText || "Confirm Booking"
+  );
   const [fields, setFields] = useState<FormField[]>(
     form?.fields?.length
       ? form.fields.map((f) => ({ ...f, placeholder: f.placeholder || "", helpText: f.helpText || "" }))
@@ -285,6 +295,13 @@ function FormBuilder({
         title: title.trim(),
         description: description.trim() || undefined,
         type,
+        designConfig: {
+          primaryColor,
+          backgroundColor: "#ffffff",
+          textColor: "#111827",
+          borderRadius,
+          buttonText,
+        },
         fields: fields.map((f, i) => ({ ...f, order: i + 1 })),
       };
 
@@ -409,6 +426,74 @@ function FormBuilder({
             placeholder="Optional subtitle shown to customers"
             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none"
           />
+        </div>
+      </div>
+
+      {/* Visual Theme & Branding Customizer */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 space-y-4">
+        <h2 className="text-sm font-bold text-slate-800">
+          Visual Theme &amp; Widget Branding
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+              Brand Accent Color
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={primaryColor}
+                onChange={(e) => setPrimaryColor(e.target.value)}
+                className="w-9 h-9 rounded-lg border border-slate-200 cursor-pointer"
+              />
+              <input
+                type="text"
+                value={primaryColor}
+                onChange={(e) => setPrimaryColor(e.target.value)}
+                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+              Corner Radius
+            </label>
+            <select
+              value={borderRadius}
+              onChange={(e) => setBorderRadius(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+            >
+              <option value="4px">Sharp (4px)</option>
+              <option value="8px">Standard (8px)</option>
+              <option value="12px">Rounded (12px)</option>
+              <option value="16px">Pill / Soft (16px)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+              Submit Button Label
+            </label>
+            <input
+              type="text"
+              value={buttonText}
+              onChange={(e) => setButtonText(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+              Live Button Preview
+            </label>
+            <div
+              style={{
+                backgroundColor: primaryColor,
+                borderRadius,
+              }}
+              className="w-full py-2.5 px-4 text-white font-bold text-xs text-center shadow-xs transition"
+            >
+              {buttonText || "Confirm Booking"}
+            </div>
+          </div>
         </div>
       </div>
 

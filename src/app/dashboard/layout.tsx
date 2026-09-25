@@ -83,6 +83,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Alerts & Ledger", href: "/dashboard/notifications", icon: Bell },
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart2 },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
+    { name: "Super Admin", href: "/dashboard/admin", icon: ShieldCheck },
   ];
 
   return (
