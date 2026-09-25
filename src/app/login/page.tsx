@@ -13,6 +13,7 @@ const DEMO_ROLES = [
     label: "Super Admin",
     email: "superadmin@clientflow.com",
     name: "Master Admin",
+    phone: "01711001100",
     icon: Shield,
     color: "bg-red-50 text-red-700 border-red-200",
   },
@@ -21,6 +22,7 @@ const DEMO_ROLES = [
     label: "Admin",
     email: "admin@clientflow.com",
     name: "Platform Manager",
+    phone: "01711002200",
     icon: Shield,
     color: "bg-purple-50 text-purple-700 border-purple-200",
   },
@@ -29,6 +31,7 @@ const DEMO_ROLES = [
     label: "Business Owner",
     email: "owner@glamourstudio.com",
     name: "Tahsina Rahman",
+    phone: "01711003300",
     icon: Briefcase,
     color: "bg-amber-50 text-amber-700 border-amber-200",
   },
@@ -37,6 +40,7 @@ const DEMO_ROLES = [
     label: "Staff Member",
     email: "stylist@glamourstudio.com",
     name: "Sadia Sultana",
+    phone: "01711004400",
     icon: UserCheck,
     color: "bg-blue-50 text-blue-700 border-blue-200",
   },
@@ -45,6 +49,7 @@ const DEMO_ROLES = [
     label: "Customer Profile",
     email: "client@gmail.com",
     name: "Farhana Ahmed",
+    phone: "01711005500",
     icon: Users,
     color: "bg-emerald-50 text-emerald-700 border-emerald-200",
   },
@@ -90,7 +95,7 @@ export default function LoginPage() {
       }
 
       toast.success(`Welcome back, ${data.user?.name || "User"}!`);
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err: any) {
       toast.error(err.message || "Failed to sign in. Please verify your credentials.");
     } finally {
@@ -120,7 +125,7 @@ export default function LoginPage() {
         });
         if (syncRes.ok) {
           toast.success("Signed in with Google successfully!", { id: "oauth-sim" });
-          router.push("/dashboard");
+          window.location.href = "/dashboard";
           return;
         }
       }
@@ -144,25 +149,26 @@ export default function LoginPage() {
           email: demo.email,
           name: demo.name,
           role: demo.role,
-          phone: "01711002233",
+          phone: demo.phone,
           businessName: "Glamour Studio HQ",
         }),
       });
 
-      if (syncRes.ok) {
-        toast.success(`Active Profile: ${demo.label} (${demo.name})`, { id: "quick-role" });
-        if (demo.role === "CUSTOMER") {
-          router.push("/portal/glamour-studio");
-        } else if (demo.role === "SUPER_ADMIN") {
-          router.push("/dashboard/admin");
-        } else {
-          router.push("/dashboard");
-        }
+      const data = await syncRes.json();
+      if (!syncRes.ok) {
+        throw new Error(data.error || "Quick sign in failed");
+      }
+
+      toast.success(`Active Profile: ${demo.label} (${demo.name})`, { id: "quick-role" });
+      if (demo.role === "CUSTOMER") {
+        window.location.href = `/portal/${data.business?.slug || "glamour-studio"}`;
+      } else if (demo.role === "SUPER_ADMIN") {
+        window.location.href = "/dashboard/admin";
       } else {
-        throw new Error("Quick sign in failed");
+        window.location.href = "/dashboard";
       }
     } catch (err: any) {
-      toast.error(err.message, { id: "quick-role" });
+      toast.error(err.message || "Failed to sign in", { id: "quick-role" });
     } finally {
       setLoading(false);
     }
