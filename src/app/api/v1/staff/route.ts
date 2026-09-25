@@ -2,16 +2,35 @@ import { NextResponse } from "next/server";
 import { requireTenant } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
-// GET /api/v1/staff — list all staff for the tenant (includes linked user)
-export async function GET() {
+// GET /api/v1/staff — list all staff for the tenant with branch info
+export async function GET(req: Request) {
   try {
     const session = await requireTenant();
-    const staff = await prisma.staff.findMany({
-      where: { tenantId: session.tenantId },
-      include: { user: { select: { id: true, email: true, phone: true } } },
-      orderBy: { createdAt: "desc" },
-    });
-    return NextResponse.json({ staff });
+    const { searchParams } = new URL(req.url);
+    const branchId = searchParams.get("branchId");
+
+    const where: any = { tenantId: session.tenantId };
+    if (branchId) {
+      where.branchId = branchId;
+    }
+
+    const [staff, branches] = await Promise.all([
+      prisma.staff.findMany({
+        where,
+        include: {
+          user: { select: { id: true, email: true, phone: true } },
+          branch: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.branch.findMany({
+        where: { tenantId: session.tenantId, status: "ACTIVE" },
+        select: { id: true, name: true, isMain: true },
+        orderBy: [{ isMain: "desc" }, { name: "asc" }],
+      }),
+    ]);
+
+    return NextResponse.json({ staff, branches });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to load staff" },
@@ -20,7 +39,7 @@ export async function GET() {
   }
 }
 
-// POST /api/v1/staff — create a new staff member
+// POST /api/v1/staff — create a new staff member with branch assignment
 export async function POST(req: Request) {
   try {
     const session = await requireTenant();
@@ -45,7 +64,10 @@ export async function POST(req: Request) {
         branchId: branchId || null,
         status: "ACTIVE",
       },
-      include: { user: { select: { id: true, email: true, phone: true } } },
+      include: {
+        user: { select: { id: true, email: true, phone: true } },
+        branch: true,
+      },
     });
 
     return NextResponse.json({ success: true, staff: member }, { status: 201 });
@@ -57,12 +79,12 @@ export async function POST(req: Request) {
   }
 }
 
-// PATCH /api/v1/staff — update a staff member (staffId in body)
+// PATCH /api/v1/staff — update a staff member (including branch assignment)
 export async function PATCH(req: Request) {
   try {
     const session = await requireTenant();
     const body = await req.json();
-    const { staffId, name, phone, email, role, photo, status } = body;
+    const { staffId, name, phone, email, role, photo, branchId, status } = body;
 
     if (!staffId) {
       return NextResponse.json(
@@ -71,7 +93,6 @@ export async function PATCH(req: Request) {
       );
     }
 
-    // Verify the staff record belongs to this tenant before updating
     const existing = await prisma.staff.findFirst({
       where: { id: staffId, tenantId: session.tenantId },
     });
@@ -91,9 +112,13 @@ export async function PATCH(req: Request) {
         ...(email !== undefined && { email: email?.trim() || null }),
         ...(role !== undefined && { role: role?.trim() || null }),
         ...(photo !== undefined && { photo: photo?.trim() || null }),
+        ...(branchId !== undefined && { branchId: branchId || null }),
         ...(status !== undefined && { status }),
       },
-      include: { user: { select: { id: true, email: true, phone: true } } },
+      include: {
+        user: { select: { id: true, email: true, phone: true } },
+        branch: true,
+      },
     });
 
     return NextResponse.json({ success: true, staff: updated });
@@ -119,7 +144,6 @@ export async function DELETE(req: Request) {
       );
     }
 
-    // Verify ownership before deactivating
     const existing = await prisma.staff.findFirst({
       where: { id: staffId, tenantId: session.tenantId },
     });

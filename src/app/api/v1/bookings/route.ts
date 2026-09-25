@@ -180,6 +180,7 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
+  const branchId = searchParams.get("branchId");
   const upcoming = searchParams.get("upcoming");
   const page = Math.max(1, Number(searchParams.get("page") || "1"));
   const limit = Math.min(100, Number(searchParams.get("limit") || "50"));
@@ -188,6 +189,7 @@ export async function GET(req: Request) {
     const where: any = {
       tenantId,
       ...(status && status !== "ALL" ? { status: status as any } : {}),
+      ...(branchId && branchId !== "ALL" ? { branchId } : {}),
       ...(upcoming === "true"
         ? { date: { gte: new Date() }, status: { notIn: ["CANCELLED", "REJECTED", "COMPLETED"] } }
         : {}),
@@ -238,6 +240,9 @@ export async function GET(req: Request) {
     let fb = getFallbackBookings(tenantId).map(enrichBooking);
     if (status && status !== "ALL") {
       fb = fb.filter((b) => b.status === status);
+    }
+    if (branchId && branchId !== "ALL") {
+      fb = fb.filter((b) => b.branchId === branchId || b.branch?.id === branchId);
     }
     return NextResponse.json({
       bookings: fb,
@@ -496,6 +501,8 @@ export async function POST(req: Request) {
           },
           service,
           staff: { id: staffId || "st-1", name: "Dr. Farhana Rahman" },
+          branchId: branchId || null,
+          branch: branchId ? { id: branchId, name: "Selected Branch" } : null,
           resources: (resourceIds || []).map((rId: string) => ({
             resource: { id: rId, name: "Assigned Room/Equipment", type: "ROOM" },
           })),

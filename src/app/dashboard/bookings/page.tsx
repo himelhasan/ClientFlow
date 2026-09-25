@@ -19,7 +19,10 @@ import {
   AlertTriangle,
   CheckCircle2,
   ExternalLink,
+  MapPin,
+  Building2,
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { formatBDT, formatBdDate } from "@/lib/utils/bangladesh";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -63,6 +66,9 @@ export default function BookingsManagement() {
   const [showNew, setShowNew] = useState(false);
   const [services, setServices] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("ALL");
+  const [allStaff, setAllStaff] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -78,6 +84,7 @@ export default function BookingsManagement() {
     customerPhone: "",
     customerEmail: "",
     serviceId: "",
+    branchId: "",
     staffName: "Dr. Farhana Rahman",
     date: new Date().toISOString().split("T")[0],
     startTime: "10:00",
@@ -89,18 +96,18 @@ export default function BookingsManagement() {
   };
   const [newForm, setNewForm] = useState(emptyForm);
 
-  async function loadBookings() {
+  async function loadBookings(branch = selectedBranchId, status = filter) {
     setLoading(true);
     try {
-      const url =
-        filter === "ALL"
-          ? "/api/v1/bookings?limit=60"
-          : `/api/v1/bookings?status=${filter}&limit=60`;
-      const res = await fetch(url);
+      const params = new URLSearchParams({ limit: "100" });
+      if (status !== "ALL") params.set("status", status);
+      if (branch !== "ALL") params.set("branchId", branch);
+      const res = await fetch(`/api/v1/bookings?${params.toString()}`);
       const data = await res.json();
       setBookings(data.bookings || []);
     } catch (err) {
       console.error(err);
+      toast.error("Failed to load appointments");
     } finally {
       setLoading(false);
     }
@@ -108,10 +115,12 @@ export default function BookingsManagement() {
 
   async function loadServicesAndResources() {
     try {
-      const [srvRes, resRes, calRes] = await Promise.all([
+      const [srvRes, resRes, calRes, brRes, stRes] = await Promise.all([
         fetch("/api/v1/services"),
         fetch("/api/v1/resources"),
         fetch("/api/v1/calendar-sync"),
+        fetch("/api/v1/branches"),
+        fetch("/api/v1/staff"),
       ]);
       if (srvRes.ok) {
         const sData = await srvRes.json();
@@ -126,12 +135,20 @@ export default function BookingsManagement() {
         setConnections(cData.connections || []);
         setExternalEvents(cData.events || []);
       }
+      if (brRes.ok) {
+        const bData = await brRes.json();
+        setBranches(bData.branches || []);
+      }
+      if (stRes.ok) {
+        const stData = await stRes.json();
+        setAllStaff(stData.staff || []);
+      }
     } catch (_) {}
   }
 
   useEffect(() => {
-    loadBookings();
-  }, [filter]);
+    loadBookings(selectedBranchId, filter);
+  }, [filter, selectedBranchId]);
 
   useEffect(() => {
     loadServicesAndResources();
@@ -169,6 +186,7 @@ export default function BookingsManagement() {
       });
       const data = await res.json();
       if (res.ok) {
+        toast.success(`Booking status updated to ${newStatus.replace("_", " ")}`);
         setBookings((prev) =>
           prev.map((b) =>
             b.id === bookingId
@@ -181,9 +199,11 @@ export default function BookingsManagement() {
               : b
           )
         );
+      } else {
+        toast.error(data.error || "Failed to update booking status");
       }
     } catch (err) {
-      alert("Failed to update status");
+      toast.error("Failed to update status");
     } finally {
       setUpdatingId(null);
     }
@@ -221,14 +241,19 @@ export default function BookingsManagement() {
 
       const data = await res.json();
       if (res.ok) {
+        toast.success(
+          recurrenceMultiplier > 1
+            ? `Successfully created ${recurrenceMultiplier} recurring appointments!`
+            : "Appointment successfully scheduled!"
+        );
         setShowNew(false);
         setNewForm(emptyForm);
         await loadBookings();
       } else {
-        alert(data.error || "Failed to create booking");
+        toast.error(data.error || "Failed to create booking");
       }
     } catch (err) {
-      alert("Failed to create booking");
+      toast.error("Failed to create booking");
     } finally {
       setSubmitting(false);
     }
@@ -245,17 +270,19 @@ export default function BookingsManagement() {
       const data = await res.json();
       if (res.ok) {
         if (action === "SYNC_NOW") {
-          setSyncNotice(
-            `2-Way Delta Sync Complete: Imported ${data.importedCount || 1} external events & exported ${data.exportedCount || 1} bookings.`
-          );
+          const msg = `2-Way Delta Sync Complete: Imported ${data.importedCount || 1} external events & exported ${data.exportedCount || 1} bookings.`;
+          setSyncNotice(msg);
+          toast.success(msg);
         } else if (action === "SIMULATE_CONFLICT") {
-          setSyncNotice(
-            `Conflict Resolved (${data.resolution?.policyApplied}): ${
-              data.resolution?.resolutions?.[0]?.actionTaken || "External Busy Slot Synchronized"
-            }`
-          );
+          const msg = `Conflict Resolved (${data.resolution?.policyApplied}): ${
+            data.resolution?.resolutions?.[0]?.actionTaken || "External Busy Slot Synchronized"
+          }`;
+          setSyncNotice(msg);
+          toast.success(msg);
         } else {
-          setSyncNotice(`Connected ${provider?.replace("_", " ")} account.`);
+          const msg = `Connected ${provider?.replace("_", " ")} account.`;
+          setSyncNotice(msg);
+          toast.success(msg);
         }
         const calRes = await fetch("/api/v1/calendar-sync");
         if (calRes.ok) {
@@ -263,7 +290,11 @@ export default function BookingsManagement() {
           setConnections(cData.connections || []);
           setExternalEvents(cData.events || []);
         }
+      } else {
+        toast.error(data.error || "Calendar sync failed");
       }
+    } catch (_) {
+      toast.error("Calendar sync operation failed");
     } finally {
       setSyncing(false);
     }
@@ -274,14 +305,19 @@ export default function BookingsManagement() {
     field: "syncDirection" | "conflictPolicy",
     value: string
   ) {
-    await fetch("/api/v1/calendar-sync", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ connectionId, [field]: value }),
-    });
-    setConnections((prev) =>
-      prev.map((c) => (c.id === connectionId ? { ...c, [field]: value } : c))
-    );
+    try {
+      await fetch("/api/v1/calendar-sync", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ connectionId, [field]: value }),
+      });
+      toast.success("Sync policy updated");
+      setConnections((prev) =>
+        prev.map((c) => (c.id === connectionId ? { ...c, [field]: value } : c))
+      );
+    } catch (_) {
+      toast.error("Failed to update policy");
+    }
   }
 
   function toggleResourceSelection(resId: string) {
@@ -293,14 +329,26 @@ export default function BookingsManagement() {
     }));
   }
 
-  const staffColumns = Array.from(
-    new Set([
-      "Dr. Farhana Rahman",
-      "Dr. Kamrul Hasan",
-      "Dr. Nusrat Chowdhury",
-      ...bookings.map((b) => b.staff?.name).filter(Boolean),
-    ])
+  const displayedBookings = bookings.filter((b) => {
+    if (selectedBranchId === "ALL") return true;
+    return b.branchId === selectedBranchId || b.branch?.id === selectedBranchId;
+  });
+
+  const filteredStaff = allStaff.filter(
+    (st) => selectedBranchId === "ALL" || st.branchId === selectedBranchId
   );
+
+  const staffColumns =
+    filteredStaff.length > 0
+      ? filteredStaff.map((st) => st.name)
+      : Array.from(
+          new Set([
+            "Dr. Farhana Rahman",
+            "Dr. Kamrul Hasan",
+            "Dr. Nusrat Chowdhury",
+            ...displayedBookings.map((b) => b.staff?.name).filter(Boolean),
+          ])
+        );
 
   return (
     <div className="space-y-6 bg-[#F8F8F6] text-[#181A1E]">
@@ -334,6 +382,67 @@ export default function BookingsManagement() {
           </button>
         </div>
       </div>
+
+      {/* Branch Filter Tabs Bar (Multi-Branch Calendars) */}
+      {branches.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <button
+            onClick={() => {
+              setSelectedBranchId("ALL");
+              loadBookings("ALL", filter);
+            }}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+              selectedBranchId === "ALL"
+                ? "bg-[#181A1E] text-white shadow-sm"
+                : "bg-white text-[#73767D] hover:text-[#181A1E] border border-[#EAEAEA]"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            All Branch Calendars
+            <span
+              className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                selectedBranchId === "ALL"
+                  ? "bg-white/20 text-white"
+                  : "bg-[#F8F8FA] text-[#73767D]"
+              }`}
+            >
+              {bookings.length}
+            </span>
+          </button>
+          {branches.map((br) => {
+            const count = bookings.filter(
+              (b) => b.branchId === br.id || b.branch?.id === br.id
+            ).length;
+            const isSelected = selectedBranchId === br.id;
+            return (
+              <button
+                key={br.id}
+                onClick={() => {
+                  setSelectedBranchId(br.id);
+                  loadBookings(br.id, filter);
+                }}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+                  isSelected
+                    ? "bg-[#181A1E] text-white shadow-sm"
+                    : "bg-white text-[#73767D] hover:text-[#181A1E] border border-[#EAEAEA]"
+                }`}
+              >
+                <MapPin className={`w-3.5 h-3.5 ${isSelected ? "text-[#F5C94A]" : "text-[#73767D]"}`} />
+                {br.name}
+                <span
+                  className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    isSelected
+                      ? "bg-white/20 text-white"
+                      : "bg-[#F8F8FA] text-[#73767D]"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* View Switcher Bar + Status Filters */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3.5 rounded-[20px] border border-[#EAEAEA] shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)]">
@@ -402,7 +511,7 @@ export default function BookingsManagement() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label className="block text-xs font-semibold uppercase mb-1 text-[#181A1E]">
                 Customer Name *
@@ -426,6 +535,24 @@ export default function BookingsManagement() {
                 onChange={(e) => setNewForm({ ...newForm, customerPhone: e.target.value })}
                 className="w-full px-3 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-xs text-[#181A1E] focus:border-[#F5C94A] focus:outline-none"
               />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase mb-1 text-[#181A1E] flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-[#5B4712]" />
+                Branch Location
+              </label>
+              <select
+                value={newForm.branchId}
+                onChange={(e) => setNewForm({ ...newForm, branchId: e.target.value })}
+                className="w-full px-3 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-xs text-[#181A1E] focus:border-[#F5C94A] focus:outline-none"
+              >
+                <option value="">Default Branch</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name} {b.isMain ? "(HQ)" : ""}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-xs font-semibold uppercase mb-1 text-[#181A1E]">Service *</label>
@@ -627,7 +754,7 @@ export default function BookingsManagement() {
           <div className="divide-y divide-[#EAEAEA]">
             {HOURS.map((hr) => {
               const hourPrefix = hr.split(":")[0];
-              const slotBookings = bookings.filter(
+              const slotBookings = displayedBookings.filter(
                 (b) => (b.startTime || "10:00").split(":")[0] === hourPrefix
               );
               const slotExtEvents = externalEvents.filter((ev) => {
@@ -651,6 +778,12 @@ export default function BookingsManagement() {
                           <p className="text-[11px]">
                             {b.service?.name} ({b.startTime})
                           </p>
+                          {b.branch && (
+                            <p className="text-[10px] text-[#174A67] flex items-center gap-1 mt-0.5">
+                              <MapPin className="w-2.5 h-2.5" />
+                              {b.branch.name}
+                            </p>
+                          )}
                         </div>
                         {b.partySize > 1 && (
                           <span className="px-2 py-0.5 rounded-full bg-white text-[10px] font-bold text-[#184E37] border border-[#CBEAD9]">
@@ -688,7 +821,7 @@ export default function BookingsManagement() {
               const d = new Date(Date.now() + (idx - 1) * 86400000);
               const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
               const dateNum = d.getDate();
-              const dayBookings = bookings.filter((b) => {
+              const dayBookings = displayedBookings.filter((b) => {
                 const bd = new Date(b.date);
                 return bd.getDate() === dateNum;
               });
@@ -736,7 +869,7 @@ export default function BookingsManagement() {
           <div className="grid grid-cols-7 gap-2">
             {Array.from({ length: 28 }).map((_, i) => {
               const dayNum = i + 1;
-              const matches = bookings.filter((b) => new Date(b.date).getDate() === dayNum);
+              const matches = displayedBookings.filter((b) => new Date(b.date).getDate() === dayNum);
               return (
                 <div
                   key={dayNum}
@@ -769,7 +902,7 @@ export default function BookingsManagement() {
           <h3 className="text-sm font-extrabold text-[#181A1E] mb-4">Staff Dispatch Columns</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {staffColumns.map((staffName) => {
-              const assigned = bookings.filter(
+              const assigned = displayedBookings.filter(
                 (b) => (b.staff?.name || "Dr. Farhana Rahman") === staffName
               );
               return (
@@ -805,6 +938,12 @@ export default function BookingsManagement() {
                       </div>
                       <p className="font-bold text-[#181A1E]">{b.customer?.name}</p>
                       <p className="text-[11px] text-[#73767D]">{b.service?.name}</p>
+                      {b.branch && (
+                        <p className="text-[10px] text-[#174A67] flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-2.5 h-2.5" />
+                          {b.branch.name}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -829,7 +968,7 @@ export default function BookingsManagement() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#EAEAEA]">
-                {bookings.map((b) => (
+                {displayedBookings.map((b) => (
                   <Fragment key={b.id}>
                     <tr
                       className="hover:bg-[#F8F8FA] transition cursor-pointer"
@@ -854,6 +993,14 @@ export default function BookingsManagement() {
                         {b.service?.name}
                         {b.staff && (
                           <p className="text-[11px] text-[#73767D]">with {b.staff.name}</p>
+                        )}
+                        {b.branch && (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E2F2FA] text-[#174A67] border border-[#C4E3F5]">
+                              <MapPin className="w-2.5 h-2.5" />
+                              {b.branch.name}
+                            </span>
+                          </div>
                         )}
                         {b.resources && b.resources.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 const serviceMetaStore = new Map<
   string,
   {
+    branchId?: string | null;
     maxCapacity: number;
     allowGroupBooking: boolean;
     depositType: string;
@@ -23,6 +24,7 @@ function getFallbackServices(tenantId: string) {
       {
         id: `srv-demo-1-${tenantId.slice(0, 4)}`,
         tenantId,
+        branchId: null,
         name: "Executive Dental Consultation & Scaling",
         description: "Comprehensive dental examination, ultrasonic scaling, and polishing.",
         durationMinutes: 45,
@@ -41,6 +43,7 @@ function getFallbackServices(tenantId: string) {
       {
         id: `srv-demo-2-${tenantId.slice(0, 4)}`,
         tenantId,
+        branchId: "branch-gulshan-hq",
         name: "Group Wellness & Physiotherapy Session",
         description: "Guided rehabilitation and posture correction workshop for small groups.",
         durationMinutes: 60,
@@ -65,6 +68,7 @@ function enrichService(s: any) {
   const meta = serviceMetaStore.get(s.id);
   return {
     ...s,
+    branchId: s.branchId ?? meta?.branchId ?? null,
     price: Number(s.price ?? 0),
     maxCapacity: Number(s.maxCapacity ?? meta?.maxCapacity ?? 1),
     allowGroupBooking: Boolean(s.allowGroupBooking ?? meta?.allowGroupBooking ?? false),
@@ -77,24 +81,46 @@ function enrichService(s: any) {
   };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   let tenantId = "demo-tenant";
   try {
     const session = await requireTenant();
     tenantId = session.tenantId;
   } catch (_) {}
 
+  const { searchParams } = new URL(req.url);
+  const branchId = searchParams.get("branchId");
+
   try {
-    const services = await prisma.service.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
-    });
+    const where: any = { tenantId };
+    if (branchId) {
+      where.OR = [{ branchId: null }, { branchId }];
+    }
+
+    const [services, branches] = await Promise.all([
+      prisma.service.findMany({
+        where,
+        include: { branch: true },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.branch.findMany({
+        where: { tenantId },
+        select: { id: true, name: true, isMain: true },
+      }),
+    ]);
+
     return NextResponse.json({
       services: services.map(enrichService),
+      branches,
     });
   } catch (_) {
     return NextResponse.json({
       services: getFallbackServices(tenantId).map(enrichService),
+      branches: [
+        { id: "branch-gulshan-hq", name: "Gulshan-2 Flagship (HQ)", isMain: true },
+        { id: "branch-dhanmondi", name: "Dhanmondi 27 Center", isMain: false },
+        { id: "branch-uttara", name: "Uttara Sector 11 Lounge", isMain: false },
+      ],
     });
   }
 }
@@ -111,6 +137,7 @@ export async function POST(req: Request) {
     const {
       name,
       description,
+      branchId, // Branch assignment
       durationMinutes,
       price,
       pricingModel,
@@ -133,6 +160,7 @@ export async function POST(req: Request) {
     const parsedDepositValue = parsedDepositType === "NONE" ? 0 : Number(depositValue) || 0;
     const parsedCancelFee = Number(cancellationFee) || 0;
     const parsedCancelWindow = Number(cancellationWindowHours ?? 24);
+    const parsedBranchId = branchId || null;
 
     try {
       const service = await prisma.service.create({
@@ -140,6 +168,7 @@ export async function POST(req: Request) {
           tenantId,
           name,
           description,
+          branchId: parsedBranchId,
           durationMinutes: Number(durationMinutes) || 30,
           price: Number(price) || 0,
           pricingModel: pricingModel || "FIXED",
@@ -153,8 +182,11 @@ export async function POST(req: Request) {
           cancellationFee: parsedCancelFee,
           cancellationWindowHours: parsedCancelWindow,
         },
+        include: { branch: true },
       });
+
       serviceMetaStore.set(service.id, {
+        branchId: parsedBranchId,
         maxCapacity: parsedCapacity,
         allowGroupBooking: Boolean(allowGroupBooking),
         depositType: parsedDepositType,
@@ -162,55 +194,31 @@ export async function POST(req: Request) {
         cancellationFee: parsedCancelFee,
         cancellationWindowHours: parsedCancelWindow,
       });
+
       return NextResponse.json({ success: true, service: enrichService(service) });
     } catch (_) {
-      // Fallback if extended columns aren't migrated yet
-      try {
-        const basicService = await prisma.service.create({
-          data: {
-            tenantId,
-            name,
-            description,
-            durationMinutes: Number(durationMinutes) || 30,
-            price: Number(price) || 0,
-            pricingModel: pricingModel || "FIXED",
-            bufferTimeMinutes: Number(bufferTimeMinutes) || 0,
-            category,
-            isActive: true,
-          },
-        });
-        serviceMetaStore.set(basicService.id, {
-          maxCapacity: parsedCapacity,
-          allowGroupBooking: Boolean(allowGroupBooking),
-          depositType: parsedDepositType,
-          depositValue: parsedDepositValue,
-          cancellationFee: parsedCancelFee,
-          cancellationWindowHours: parsedCancelWindow,
-        });
-        return NextResponse.json({ success: true, service: enrichService(basicService) });
-      } catch (__) {
-        const fbList = getFallbackServices(tenantId);
-        const newSrv = {
-          id: `srv-${Date.now()}`,
-          tenantId,
-          name,
-          description,
-          durationMinutes: Number(durationMinutes) || 30,
-          price: Number(price) || 0,
-          pricingModel: pricingModel || "FIXED",
-          bufferTimeMinutes: Number(bufferTimeMinutes) || 0,
-          category,
-          isActive: true,
-          maxCapacity: parsedCapacity,
-          allowGroupBooking: Boolean(allowGroupBooking),
-          depositType: parsedDepositType,
-          depositValue: parsedDepositValue,
-          cancellationFee: parsedCancelFee,
-          cancellationWindowHours: parsedCancelWindow,
-        };
-        fbList.unshift(newSrv);
-        return NextResponse.json({ success: true, service: newSrv });
-      }
+      const fbList = getFallbackServices(tenantId);
+      const newSrv = {
+        id: `srv-${Date.now()}`,
+        tenantId,
+        branchId: parsedBranchId,
+        name,
+        description,
+        durationMinutes: Number(durationMinutes) || 30,
+        price: Number(price) || 0,
+        pricingModel: pricingModel || "FIXED",
+        bufferTimeMinutes: Number(bufferTimeMinutes) || 0,
+        category,
+        isActive: true,
+        maxCapacity: parsedCapacity,
+        allowGroupBooking: Boolean(allowGroupBooking),
+        depositType: parsedDepositType,
+        depositValue: parsedDepositValue,
+        cancellationFee: parsedCancelFee,
+        cancellationWindowHours: parsedCancelWindow,
+      };
+      fbList.unshift(newSrv);
+      return NextResponse.json({ success: true, service: newSrv });
     }
   } catch (error: any) {
     return NextResponse.json(
@@ -233,6 +241,7 @@ export async function PATCH(req: Request) {
       serviceId,
       name,
       description,
+      branchId,
       durationMinutes,
       price,
       pricingModel,
@@ -252,6 +261,7 @@ export async function PATCH(req: Request) {
     }
 
     const existingMeta = serviceMetaStore.get(serviceId) || {
+      branchId: null,
       maxCapacity: 1,
       allowGroupBooking: false,
       depositType: "NONE",
@@ -261,6 +271,7 @@ export async function PATCH(req: Request) {
     };
 
     const nextMeta = {
+      branchId: branchId !== undefined ? branchId : existingMeta.branchId,
       maxCapacity:
         maxCapacity !== undefined ? Number(maxCapacity) : existingMeta.maxCapacity,
       allowGroupBooking:
@@ -283,76 +294,54 @@ export async function PATCH(req: Request) {
     serviceMetaStore.set(serviceId, nextMeta);
 
     try {
-      const existing = await prisma.service.findFirst({
-        where: { id: serviceId, tenantId },
+      const updated = await prisma.service.update({
+        where: { id: serviceId },
+        data: {
+          ...(name !== undefined && { name }),
+          ...(description !== undefined && { description }),
+          ...(branchId !== undefined && { branchId: branchId || null }),
+          ...(durationMinutes !== undefined && { durationMinutes: Number(durationMinutes) }),
+          ...(price !== undefined && { price: Number(price) }),
+          ...(pricingModel !== undefined && { pricingModel }),
+          ...(category !== undefined && { category }),
+          ...(bufferTimeMinutes !== undefined && {
+            bufferTimeMinutes: Number(bufferTimeMinutes),
+          }),
+          ...(isActive !== undefined && { isActive }),
+          ...(maxCapacity !== undefined && { maxCapacity: Number(maxCapacity) }),
+          ...(allowGroupBooking !== undefined && {
+            allowGroupBooking: Boolean(allowGroupBooking),
+          }),
+          ...(depositType !== undefined && { depositType }),
+          ...(depositValue !== undefined && { depositValue: Number(depositValue) }),
+          ...(cancellationFee !== undefined && {
+            cancellationFee: Number(cancellationFee),
+          }),
+          ...(cancellationWindowHours !== undefined && {
+            cancellationWindowHours: Number(cancellationWindowHours),
+          }),
+        },
+        include: { branch: true },
       });
-      if (existing) {
-        try {
-          const updated = await prisma.service.update({
-            where: { id: serviceId },
-            data: {
-              ...(name !== undefined && { name }),
-              ...(description !== undefined && { description }),
-              ...(durationMinutes !== undefined && { durationMinutes: Number(durationMinutes) }),
-              ...(price !== undefined && { price: Number(price) }),
-              ...(pricingModel !== undefined && { pricingModel }),
-              ...(category !== undefined && { category }),
-              ...(bufferTimeMinutes !== undefined && {
-                bufferTimeMinutes: Number(bufferTimeMinutes),
-              }),
-              ...(isActive !== undefined && { isActive }),
-              ...(maxCapacity !== undefined && { maxCapacity: Number(maxCapacity) }),
-              ...(allowGroupBooking !== undefined && {
-                allowGroupBooking: Boolean(allowGroupBooking),
-              }),
-              ...(depositType !== undefined && { depositType }),
-              ...(depositValue !== undefined && { depositValue: Number(depositValue) }),
-              ...(cancellationFee !== undefined && {
-                cancellationFee: Number(cancellationFee),
-              }),
-              ...(cancellationWindowHours !== undefined && {
-                cancellationWindowHours: Number(cancellationWindowHours),
-              }),
-            },
-          });
-          return NextResponse.json({ success: true, service: enrichService(updated) });
-        } catch (_) {
-          // Update only base columns if extended columns are not migrated
-          const updatedBasic = await prisma.service.update({
-            where: { id: serviceId },
-            data: {
-              ...(name !== undefined && { name }),
-              ...(description !== undefined && { description }),
-              ...(durationMinutes !== undefined && { durationMinutes: Number(durationMinutes) }),
-              ...(price !== undefined && { price: Number(price) }),
-              ...(pricingModel !== undefined && { pricingModel }),
-              ...(category !== undefined && { category }),
-              ...(bufferTimeMinutes !== undefined && {
-                bufferTimeMinutes: Number(bufferTimeMinutes),
-              }),
-              ...(isActive !== undefined && { isActive }),
-            },
-          });
-          return NextResponse.json({ success: true, service: enrichService(updatedBasic) });
-        }
+      return NextResponse.json({ success: true, service: enrichService(updated) });
+    } catch (_) {
+      const fbList = getFallbackServices(tenantId);
+      const target = fbList.find((s) => s.id === serviceId);
+      if (target) {
+        Object.assign(target, {
+          ...(name !== undefined && { name }),
+          ...(description !== undefined && { description }),
+          ...(branchId !== undefined && { branchId: branchId || null }),
+          ...(durationMinutes !== undefined && { durationMinutes: Number(durationMinutes) }),
+          ...(price !== undefined && { price: Number(price) }),
+          ...(pricingModel !== undefined && { pricingModel }),
+          ...(category !== undefined && { category }),
+          ...(bufferTimeMinutes !== undefined && { bufferTimeMinutes: Number(bufferTimeMinutes) }),
+          ...(isActive !== undefined && { isActive }),
+          ...nextMeta,
+        });
+        return NextResponse.json({ success: true, service: target });
       }
-    } catch (_) {}
-
-    const fbList = getFallbackServices(tenantId);
-    const target = fbList.find((s) => s.id === serviceId);
-    if (target) {
-      Object.assign(target, {
-        ...(name !== undefined && { name }),
-        ...(description !== undefined && { description }),
-        ...(durationMinutes !== undefined && { durationMinutes: Number(durationMinutes) }),
-        ...(price !== undefined && { price: Number(price) }),
-        ...(pricingModel !== undefined && { pricingModel }),
-        ...(category !== undefined && { category }),
-        ...(bufferTimeMinutes !== undefined && { bufferTimeMinutes: Number(bufferTimeMinutes) }),
-        ...(isActive !== undefined && { isActive }),
-        ...nextMeta,
-      });
-      return NextResponse.json({ success: true, service: target });
     }
 
     return NextResponse.json({ error: "Service not found" }, { status: 404 });
@@ -380,25 +369,17 @@ export async function DELETE(req: Request) {
     }
 
     try {
-      const existing = await prisma.service.findFirst({
-        where: { id: serviceId, tenantId },
+      await prisma.service.update({
+        where: { id: serviceId },
+        data: { isActive: false },
       });
-      if (existing) {
-        await prisma.service.update({
-          where: { id: serviceId },
-          data: { isActive: false },
-        });
-        return NextResponse.json({ success: true });
-      }
-    } catch (_) {}
-
-    const fbList = getFallbackServices(tenantId);
-    const target = fbList.find((s) => s.id === serviceId);
-    if (target) {
-      target.isActive = false;
+      return NextResponse.json({ success: true });
+    } catch (_) {
+      const fbList = getFallbackServices(tenantId);
+      const target = fbList.find((s) => s.id === serviceId);
+      if (target) target.isActive = false;
+      return NextResponse.json({ success: true });
     }
-
-    return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to delete service" },

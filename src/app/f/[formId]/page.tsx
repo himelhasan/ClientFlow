@@ -9,7 +9,10 @@ import {
   MapPin,
   MessageCircle,
   AlertCircle,
+  Building2,
+  Star,
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { formatBDT } from "@/lib/utils/bangladesh";
 
 function BookingFormInner() {
@@ -21,6 +24,9 @@ function BookingFormInner() {
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState<any>(null);
   const [error, setError] = useState("");
+
+  // Branch Selection (if business has multiple branches)
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
 
   // Booking selections
   const [selectedServiceId, setSelectedServiceId] = useState("");
@@ -42,7 +48,7 @@ function BookingFormInner() {
   const [submitting, setSubmitting] = useState(false);
   const [confirmedBooking, setConfirmedBooking] = useState<any>(null);
 
-  // Load form definition and initial services
+  // Load form definition, branches, and initial services
   useEffect(() => {
     async function loadForm() {
       try {
@@ -51,6 +57,11 @@ function BookingFormInner() {
         if (!res.ok) throw new Error(data.error || "Failed to load booking form");
 
         setFormData(data);
+        if (data.branches?.length > 0) {
+          // Pre-select main HQ or first branch
+          const mainBranch = data.branches.find((b: any) => b.isMain) || data.branches[0];
+          setSelectedBranchId(mainBranch.id);
+        }
         if (data.services?.length > 0) {
           setSelectedServiceId(data.services[0].id);
         }
@@ -63,7 +74,23 @@ function BookingFormInner() {
     loadForm();
   }, [formId]);
 
-  // Load available slots whenever selected service or date changes
+  // Filter available services by selected branch
+  const filteredServices = (formData?.services || []).filter((s: any) => {
+    if (!selectedBranchId) return true;
+    return !s.branchId || s.branchId === selectedBranchId;
+  });
+
+  // Ensure selectedServiceId is valid within filtered services
+  useEffect(() => {
+    if (filteredServices.length > 0) {
+      const stillValid = filteredServices.some((s: any) => s.id === selectedServiceId);
+      if (!stillValid) {
+        setSelectedServiceId(filteredServices[0].id);
+      }
+    }
+  }, [selectedBranchId]);
+
+  // Load available slots whenever selected service, date, or branch changes
   useEffect(() => {
     if (!selectedServiceId || !selectedDate || !formId) return;
 
@@ -71,8 +98,9 @@ function BookingFormInner() {
       setLoadingSlots(true);
       setSelectedSlot(null);
       try {
+        const branchQuery = selectedBranchId ? `&branchId=${selectedBranchId}` : "";
         const res = await fetch(
-          `/api/v1/widget/${formId}?date=${selectedDate}&serviceId=${selectedServiceId}`
+          `/api/v1/widget/${formId}?date=${selectedDate}&serviceId=${selectedServiceId}${branchQuery}`
         );
         const data = await res.json();
         if (data.slots) {
@@ -86,7 +114,7 @@ function BookingFormInner() {
     }
 
     loadSlots();
-  }, [formId, selectedServiceId, selectedDate]);
+  }, [formId, selectedServiceId, selectedDate, selectedBranchId]);
 
   // Report height to parent window if embedded
   useEffect(() => {
@@ -107,17 +135,20 @@ function BookingFormInner() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedSlot) {
-      alert("Please select an available appointment time slot.");
+      toast.error("Please select an available appointment time slot.");
       return;
     }
 
     setSubmitting(true);
+    toast.loading("Reserving your appointment...", { id: "widget-submit" });
+
     try {
       const res = await fetch(`/api/v1/widget/${formId}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           serviceId: selectedServiceId,
+          branchId: selectedBranchId || undefined,
           date: selectedDate,
           startTime: selectedSlot.startTime,
           endTime: selectedSlot.endTime,
@@ -136,8 +167,9 @@ function BookingFormInner() {
       if (!res.ok) throw new Error(data.error || "Booking submission failed");
 
       setConfirmedBooking(data);
+      toast.success("Appointment confirmed!", { id: "widget-submit" });
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || "Failed to submit booking", { id: "widget-submit" });
     } finally {
       setSubmitting(false);
     }
@@ -154,7 +186,7 @@ function BookingFormInner() {
   if (error || !formData) {
     return (
       <div className="min-h-screen bg-[#F8F8F6] text-[#181A1E] p-8 flex items-center justify-center">
-        <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] text-center max-w-md w-full">
+        <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-sm text-center max-w-md w-full">
           <AlertCircle className="w-12 h-12 text-[#181A1E] mx-auto mb-3" />
           <h3 className="text-lg font-bold text-[#181A1E]">Booking Form Unavailable</h3>
           <p className="text-sm text-[#73767D] mt-1">{error || "Form could not be found."}</p>
@@ -163,7 +195,8 @@ function BookingFormInner() {
     );
   }
 
-  const { business, services } = formData;
+  const { business, branches } = formData;
+  const hasMultipleBranches = branches && branches.length > 1;
 
   return (
     <div
@@ -173,7 +206,7 @@ function BookingFormInner() {
           : "min-h-screen bg-[#F8F8F6] text-[#181A1E] py-8 px-4 sm:px-6"
       }`}
     >
-      <div className="max-w-xl mx-auto bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] space-y-6">
+      <div className="max-w-xl mx-auto bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-sm space-y-6">
         {/* Business Branding Header */}
         <div className="bg-[#F8F8FA] rounded-[14px] border border-[#EAEAEA] p-4 flex items-center justify-between">
           <div>
@@ -222,6 +255,12 @@ function BookingFormInner() {
                 <span className="text-[#73767D]">Service:</span>
                 <span className="font-semibold text-[#181A1E]">{confirmedBooking.serviceName}</span>
               </div>
+              {confirmedBooking.branchName && (
+                <div className="flex justify-between">
+                  <span className="text-[#73767D]">Location:</span>
+                  <span className="font-semibold text-emerald-700">{confirmedBooking.branchName}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-[#73767D]">Date:</span>
                 <span className="font-semibold text-[#181A1E]">{confirmedBooking.date}</span>
@@ -254,13 +293,55 @@ function BookingFormInner() {
         ) : (
           /* Booking Form */
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Step 1: Select Service */}
+            {/* Step 1 (Conditional): Select Branch / Location if business has multiple branches */}
+            {hasMultipleBranches && (
+              <div>
+                <label className="block text-xs font-bold text-[#181A1E] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4 text-emerald-600" /> 1. Choose Studio / Branch Location
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {branches.map((b: any) => {
+                    const isSelected = selectedBranchId === b.id;
+                    return (
+                      <div
+                        key={b.id}
+                        onClick={() => setSelectedBranchId(b.id)}
+                        className={`p-3.5 rounded-[14px] border cursor-pointer transition flex flex-col justify-between ${
+                          isSelected
+                            ? "border-emerald-600 bg-emerald-50/50 ring-2 ring-emerald-500/20"
+                            : "border-[#EAEAEA] bg-[#F8F8FA] hover:border-slate-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-bold text-[#181A1E]">
+                            {b.name}
+                          </h4>
+                          {b.isMain && (
+                            <span className="text-[9px] font-bold bg-[#E3F5EC] text-[#184E37] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                              <Star className="w-2.5 h-2.5 fill-current" /> HQ
+                            </span>
+                          )}
+                        </div>
+                        {b.address && (
+                          <p className="text-[11px] text-[#73767D] mt-1 flex items-center gap-1">
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            {b.address}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Select Service */}
             <div>
               <label className="block text-xs font-bold text-[#181A1E] uppercase tracking-wider mb-2">
-                1. Select Service
+                {hasMultipleBranches ? "2. Select Service" : "1. Select Service"}
               </label>
               <div className="grid grid-cols-1 gap-2.5">
-                {services.map((svc: any) => (
+                {filteredServices.map((svc: any) => (
                   <div
                     key={svc.id}
                     onClick={() => setSelectedServiceId(svc.id)}
@@ -285,10 +366,10 @@ function BookingFormInner() {
               </div>
             </div>
 
-            {/* Step 2: Select Date & Available Slot */}
+            {/* Step 3: Select Date & Available Slot */}
             <div>
               <label className="block text-xs font-bold text-[#181A1E] uppercase tracking-wider mb-2">
-                2. Choose Date &amp; Time
+                {hasMultipleBranches ? "3. Choose Date & Time" : "2. Choose Date & Time"}
               </label>
               <div className="flex items-center space-x-2 mb-3">
                 <input
@@ -329,10 +410,10 @@ function BookingFormInner() {
               )}
             </div>
 
-            {/* Step 3: Customer Information */}
+            {/* Step 4: Customer Information */}
             <div className="space-y-3 pt-4 border-t border-[#EAEAEA]">
               <label className="block text-xs font-bold text-[#181A1E] uppercase tracking-wider mb-2">
-                3. Your Information
+                {hasMultipleBranches ? "4. Your Information" : "3. Your Information"}
               </label>
 
               <div>
@@ -351,19 +432,18 @@ function BookingFormInner() {
                   <input
                     type="tel"
                     required
-                    placeholder="Mobile: 017XXXXXXXX *"
+                    placeholder="Mobile Number (01XXXXXXXXX) *"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] focus:border-[#F5C94A] focus:outline-none text-sm"
                   />
                 </div>
-
                 <div>
                   <input
-                    type="tel"
-                    placeholder="WhatsApp (if different)"
-                    value={customerWhatsapp}
-                    onChange={(e) => setCustomerWhatsapp(e.target.value)}
+                    type="email"
+                    placeholder="Email Address (Optional)"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] focus:border-[#F5C94A] focus:outline-none text-sm"
                   />
                 </div>
@@ -372,45 +452,41 @@ function BookingFormInner() {
               <div>
                 <textarea
                   rows={2}
-                  placeholder="Any details or notes for the specialist (optional)"
+                  placeholder="Any special requests or instructions..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] focus:border-[#F5C94A] focus:outline-none text-sm"
+                  className="w-full px-3.5 py-2.5 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] focus:border-[#F5C94A] focus:outline-none text-sm"
                 />
               </div>
             </div>
 
-            {/* Submit Button */}
+            {/* Submission Button */}
             <button
               type="submit"
               disabled={submitting || !selectedSlot}
-              className="w-full py-3.5 px-4 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl text-sm transition disabled:opacity-50 flex items-center justify-center"
+              className="w-full flex items-center justify-center py-3.5 px-4 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl text-sm transition disabled:opacity-50"
             >
               {submitting ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : selectedSlot ? (
-                <span>Confirm Booking for {selectedSlot.startTime}</span>
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin text-[#181A1E]" />
+                  <span>Securing your slot...</span>
+                </>
               ) : (
-                <span>Select a time slot to continue</span>
+                <span>Confirm Appointment</span>
               )}
             </button>
           </form>
         )}
-
-        {/* Footer info */}
-        <div className="pt-4 border-t border-[#EAEAEA] text-center text-[11px] text-[#73767D]">
-          Powered by ClientFlow • Multi-Tenant Automation Platform
-        </div>
       </div>
     </div>
   );
 }
 
-export default function PublicBookingForm() {
+export default function BookingFormPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-[400px] bg-[#F8F8F6] text-[#181A1E] flex items-center justify-center p-6">
+        <div className="min-h-screen bg-[#F8F8F6] flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-[#181A1E]" />
         </div>
       }
