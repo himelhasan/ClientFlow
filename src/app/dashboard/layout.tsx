@@ -15,6 +15,8 @@ import {
   Loader2,
   ShieldCheck,
   Zap,
+  Clock,
+  UserCheck,
 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -59,7 +61,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { name: "Bookings", href: "/dashboard/bookings", icon: Calendar },
     { name: "Leads", href: "/dashboard/leads", icon: Target },
+    { name: "Customers", href: "/dashboard/customers", icon: Users },
     { name: "Services", href: "/dashboard/services", icon: Briefcase },
+    { name: "Staff", href: "/dashboard/staff", icon: UserCheck },
+    { name: "Availability", href: "/dashboard/availability", icon: Clock },
     { name: "Embed & Forms", href: "/dashboard/forms", icon: FileCode },
   ];
 
