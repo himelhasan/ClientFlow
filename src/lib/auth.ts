@@ -40,7 +40,7 @@ export function verifyToken(token: string): SessionPayload | null {
  * Retrieves the current authenticated session from cookies
  */
 export async function getSession(): Promise<SessionPayload | null> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE)?.value;
   if (!token) return null;
   return verifyToken(token);

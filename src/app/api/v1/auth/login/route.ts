@@ -52,7 +52,8 @@ export async function POST(req: Request) {
       businessName: primaryTenant?.name,
     });
 
-    cookies().set("clientflow_token", token, {
+    const cookieStore = await cookies();
+    cookieStore.set("clientflow_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

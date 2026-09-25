@@ -45,6 +45,7 @@ export async function GET() {
 }
 
 export async function POST() {
-  cookies().delete("clientflow_token");
+  const cookieStore = await cookies();
+  cookieStore.delete("clientflow_token");
   return NextResponse.json({ success: true });
 }

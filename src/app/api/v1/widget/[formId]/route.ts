@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { calculateAvailableSlots } from "@/lib/engine/booking";
 
-export async function GET(req: Request, { params }: { params: { formId: string } }) {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ formId: string }> }
+) {
   try {
-    const { formId } = params;
+    const { formId } = await params;
     const { searchParams } = new URL(req.url);
     const dateParam = searchParams.get("date");
     const serviceIdParam = searchParams.get("serviceId");

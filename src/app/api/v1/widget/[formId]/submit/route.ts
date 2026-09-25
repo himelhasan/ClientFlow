@@ -5,9 +5,12 @@ import { checkLeadQuota } from "@/lib/engine/quota";
 import { normalizeBdPhone, isValidBdPhone, formatBDT, formatBdDate } from "@/lib/utils/bangladesh";
 import { whatsAppService, smsService } from "@/lib/messaging/adapters";
 
-export async function POST(req: Request, { params }: { params: { formId: string } }) {
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ formId: string }> }
+) {
   try {
-    const { formId } = params;
+    const { formId } = await params;
     const body = await req.json();
 
     const {
