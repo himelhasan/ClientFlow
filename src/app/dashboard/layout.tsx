@@ -21,6 +21,9 @@ import {
   MessageSquare,
   BarChart2,
   Settings,
+  MapPin,
+  Plug,
+  Sparkles,
 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -71,8 +74,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Services", href: "/dashboard/services", icon: Briefcase },
     { name: "Staff", href: "/dashboard/staff", icon: UserCheck },
     { name: "Availability", href: "/dashboard/availability", icon: Clock },
+    { name: "Branches & Holidays", href: "/dashboard/branches", icon: MapPin },
     { name: "Forms", href: "/dashboard/forms", icon: FileCode },
     { name: "Automations", href: "/dashboard/automations", icon: Zap },
+    { name: "AI Receptionist", href: "/dashboard/ai", icon: Sparkles },
+    { name: "Integrations", href: "/dashboard/integrations", icon: Plug },
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart2 },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
