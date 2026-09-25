@@ -86,6 +86,25 @@ export default function AutomationsPage() {
     }
   }
 
+  const [runningCron, setRunningCron] = useState(false);
+  const [cronResult, setCronResult] = useState<string | null>(null);
+
+  async function runReminderCron() {
+    setRunningCron(true);
+    setCronResult(null);
+    try {
+      const res = await fetch("/api/v1/cron/reminders", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setCronResult(
+          `Reminder Scan Complete: Checked ${data.scannedBookings} upcoming confirmed booking(s) · Sent ${data.dispatchedCount} new reminder(s) · Skipped ${data.skippedIdempotent} already-sent (idempotent).`
+        );
+      }
+    } finally {
+      setRunningCron(false);
+    }
+  }
+
   async function toggleRule(rule: any) {
     const nextState = !rule.isActive;
     setAutomations((prev) =>
@@ -119,14 +138,35 @@ export default function AutomationsPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowAdd(!showAdd)}
-          className="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs transition"
-        >
-          <Plus className="w-4 h-4 mr-1.5" />
-          New Automation Rule
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={runReminderCron}
+            disabled={runningCron}
+            className="inline-flex items-center px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl shadow-xs transition"
+          >
+            {runningCron ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5 text-emerald-600" />
+            ) : (
+              <Zap className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+            )}
+            Run 24h Reminder Check
+          </button>
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            className="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs transition"
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            New Automation Rule
+          </button>
+        </div>
       </div>
+
+      {cronResult && (
+        <div className="px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800">
+          {cronResult}
+        </div>
+      )}
 
       {/* Add Rule Form */}
       {showAdd && (

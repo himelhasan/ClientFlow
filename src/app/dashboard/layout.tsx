@@ -24,6 +24,7 @@ import {
   MapPin,
   Plug,
   Sparkles,
+  Bell,
 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -79,6 +80,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Automations", href: "/dashboard/automations", icon: Zap },
     { name: "AI Receptionist", href: "/dashboard/ai", icon: Sparkles },
     { name: "Integrations", href: "/dashboard/integrations", icon: Plug },
+    { name: "Alerts & Ledger", href: "/dashboard/notifications", icon: Bell },
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart2 },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
