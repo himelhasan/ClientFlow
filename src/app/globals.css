@@ -34,6 +34,36 @@
 
     --radius: 0.65rem;
   }
+
+  .dark {
+    --background: 222.2 47.4% 6.5%;
+    --foreground: 210 40% 96%;
+
+    --card: 222.2 47.4% 9.5%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222.2 47.4% 9.5%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 158 64% 42%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217.2 32.6% 14.5%;
+    --secondary-foreground: 210 40% 96%;
+
+    --muted: 217.2 32.6% 14.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 14.5%;
+    --accent-foreground: 210 40% 96%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 158 64% 42%;
+  }
 }
 
 body {
@@ -41,4 +71,72 @@ body {
   background: hsl(var(--background));
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ============================================================================
+   Global Dark Mode Surface, Typography, Border & Input Adaptations
+   ============================================================================ */
+html.dark body {
+  background-color: #090d16;
+  color: #f1f5f9;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/80,
+html.dark .bg-slate-50\/70,
+html.dark .bg-slate-50\/60,
+html.dark .bg-slate-50\/50 {
+  background-color: #0f172a !important;
+}
+
+html.dark .bg-slate-100 {
+  background-color: #1e293b !important;
+}
+
+html.dark .bg-white {
+  background-color: #111827 !important;
+}
+
+html.dark .text-slate-950,
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-slate-500,
+html.dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+html.dark .border-slate-200,
+html.dark .border-slate-200\/80,
+html.dark .border-slate-200\/70,
+html.dark .border-slate-200\/50,
+html.dark .border-slate-300,
+html.dark .border-slate-100 {
+  border-color: #1e293b !important;
+}
+
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1e293b !important;
+}
+
+html.dark input:not([type="color"]):not([type="checkbox"]),
+html.dark select,
+html.dark textarea {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #64748b !important;
 }

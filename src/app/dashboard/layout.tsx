@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { ThemeToggle } from "@/components/ThemeProvider";
 import {
   LayoutDashboard,
   Calendar,
@@ -142,13 +143,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         {/* Quota & User Footer */}
-        <div className="p-4 border-t border-slate-100">
-          <div className="flex items-center justify-between mb-3 text-xs">
+        <div className="p-4 border-t border-slate-100 space-y-2.5">
+          <div className="flex items-center justify-between text-xs">
             <span className="text-slate-500 font-medium">Signed in as:</span>
             <span className="text-slate-900 font-bold truncate max-w-[120px]">
               {session?.user?.name}
             </span>
           </div>
+
+          <ThemeToggle className="w-full justify-center" />
 
           <button
             onClick={handleLogout}
