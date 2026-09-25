@@ -70,10 +70,10 @@ export default function NotificationsAndAuditPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-950 tracking-tight">
+          <h1 className="text-2xl font-extrabold text-[#181A1E] tracking-tight">
             Notifications, Usage Ledger &amp; Audit Trail
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-[#73767D] mt-1">
             Real-time booking alerts, per-message WhatsApp/SMS BDT cost ledger, and tenant security logs.
           </p>
         </div>
@@ -81,7 +81,7 @@ export default function NotificationsAndAuditPage() {
         {unreadCount > 0 && (
           <button
             onClick={markAllRead}
-            className="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition"
+            className="inline-flex items-center px-4 py-2 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] text-xs font-semibold rounded-xl transition"
           >
             <CheckCheck className="w-4 h-4 mr-1.5" />
             Mark All Read ({unreadCount})
@@ -90,13 +90,13 @@ export default function NotificationsAndAuditPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-slate-200 w-fit text-xs font-bold">
+      <div className="flex flex-wrap items-center gap-2 text-xs">
         <button
           onClick={() => setTab("alerts")}
-          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition ${
+          className={`flex items-center gap-1.5 px-3.5 py-2 transition ${
             tab === "alerts"
-              ? "bg-emerald-600 text-white"
-              : "text-slate-600 hover:bg-slate-50"
+              ? "bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl"
+              : "bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl"
           }`}
         >
           <Bell className="w-3.5 h-3.5" />
@@ -104,10 +104,10 @@ export default function NotificationsAndAuditPage() {
         </button>
         <button
           onClick={() => setTab("ledger")}
-          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition ${
+          className={`flex items-center gap-1.5 px-3.5 py-2 transition ${
             tab === "ledger"
-              ? "bg-emerald-600 text-white"
-              : "text-slate-600 hover:bg-slate-50"
+              ? "bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl"
+              : "bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl"
           }`}
         >
           <Receipt className="w-3.5 h-3.5" />
@@ -115,10 +115,10 @@ export default function NotificationsAndAuditPage() {
         </button>
         <button
           onClick={() => setTab("audit")}
-          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition ${
+          className={`flex items-center gap-1.5 px-3.5 py-2 transition ${
             tab === "audit"
-              ? "bg-emerald-600 text-white"
-              : "text-slate-600 hover:bg-slate-50"
+              ? "bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl"
+              : "bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl"
           }`}
         >
           <ShieldCheck className="w-3.5 h-3.5" />
@@ -128,37 +128,37 @@ export default function NotificationsAndAuditPage() {
 
       {loading ? (
         <div className="py-20 flex justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#181A1E]" />
         </div>
       ) : tab === "alerts" ? (
         notifications.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center space-y-2">
-            <Bell className="w-10 h-10 text-slate-300 mx-auto" />
-            <h3 className="text-sm font-bold text-slate-800">
+          <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] py-12 text-center space-y-2">
+            <Bell className="w-10 h-10 text-[#73767D] mx-auto" />
+            <h3 className="text-sm font-bold text-[#181A1E]">
               No notifications yet
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[#73767D]">
               Alerts for new bookings, leads, and quota thresholds appear here.
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-slate-200/80 divide-y divide-slate-100">
+          <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] space-y-3">
             {notifications.map((n) => (
               <div
                 key={n.id}
                 onClick={() => !n.isRead && markOneRead(n.id)}
-                className={`p-4 flex items-start justify-between gap-4 transition cursor-pointer ${
-                  n.isRead ? "bg-white" : "bg-emerald-50/40"
+                className={`rounded-[14px] border border-[#EAEAEA] p-4 flex items-start justify-between gap-4 transition cursor-pointer ${
+                  n.isRead ? "bg-[#F8F8FA]" : "bg-[#FBF3DC]"
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <div
                     className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                       n.type === "NEW_BOOKING"
-                        ? "bg-emerald-100 text-emerald-700"
+                        ? "bg-[#E3F5EC] text-[#184E37] border border-[#CBEAD9]"
                         : n.type === "QUOTA_ALERT"
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-blue-100 text-blue-700"
+                        ? "bg-[#FBF3DC] text-[#5B4712] border border-[#F2E2B6]"
+                        : "bg-[#E2F2FA] text-[#174A67] border border-[#C4E3F5]"
                     }`}
                   >
                     {n.type === "NEW_BOOKING" ? (
@@ -171,15 +171,17 @@ export default function NotificationsAndAuditPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-xs font-bold text-slate-900">
+                      <p className="text-xs font-bold text-[#181A1E]">
                         {n.title}
                       </p>
                       {!n.isRead && (
-                        <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#E3F5EC] text-[#184E37] border border-[#CBEAD9]">
+                          NEW
+                        </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-600 mt-0.5">{n.message}</p>
-                    <p className="text-[10px] text-slate-400 mt-1">
+                    <p className="text-xs text-[#73767D] mt-0.5">{n.message}</p>
+                    <p className="text-[10px] text-[#73767D] mt-1">
                       {formatBdDateTime(n.createdAt)}
                     </p>
                   </div>
@@ -187,7 +189,7 @@ export default function NotificationsAndAuditPage() {
                 {n.link && (
                   <Link
                     href={n.link}
-                    className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center shrink-0"
+                    className="px-3 py-1.5 bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl text-xs flex items-center shrink-0"
                   >
                     View <ExternalLink className="w-3 h-3 ml-1" />
                   </Link>
@@ -197,81 +199,85 @@ export default function NotificationsAndAuditPage() {
           </div>
         )
       ) : tab === "ledger" ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden">
+        <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] overflow-hidden">
           {usageLedger.length === 0 ? (
-            <div className="p-12 text-center text-xs text-slate-400">
+            <div className="p-12 text-center text-xs text-[#73767D]">
               No outbound messaging usage recorded yet.
             </div>
           ) : (
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold">
-                <tr>
-                  <th className="py-3 px-4">Channel</th>
-                  <th className="py-3 px-4">Provider</th>
-                  <th className="py-3 px-4">Type</th>
-                  <th className="py-3 px-4">Unit Cost (BDT)</th>
-                  <th className="py-3 px-4">Dispatched At</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {usageLedger.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-50/60">
-                    <td className="py-3 px-4 font-bold text-slate-900">
-                      {u.channel}
-                    </td>
-                    <td className="py-3 px-4 font-mono text-slate-600">
-                      {u.provider}
-                    </td>
-                    <td className="py-3 px-4 text-slate-600">
-                      {u.messageType}
-                    </td>
-                    <td className="py-3 px-4 font-bold text-emerald-700">
-                      {formatBDT(u.providerCost)}
-                    </td>
-                    <td className="py-3 px-4 text-slate-400">
-                      {formatBdDateTime(u.createdAt)}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#F8F8FA] border-b border-[#EAEAEA] text-[#73767D] uppercase font-semibold">
+                  <tr>
+                    <th className="py-3 px-4">Channel</th>
+                    <th className="py-3 px-4">Provider</th>
+                    <th className="py-3 px-4">Type</th>
+                    <th className="py-3 px-4">Unit Cost (BDT)</th>
+                    <th className="py-3 px-4">Dispatched At</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-[#EAEAEA]">
+                  {usageLedger.map((u) => (
+                    <tr key={u.id} className="hover:bg-[#F8F8FA]">
+                      <td className="py-3 px-4 font-bold text-[#181A1E]">
+                        {u.channel}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-[#73767D]">
+                        {u.provider}
+                      </td>
+                      <td className="py-3 px-4 text-[#73767D]">
+                        {u.messageType}
+                      </td>
+                      <td className="py-3 px-4 font-bold text-[#184E37]">
+                        {formatBDT(u.providerCost)}
+                      </td>
+                      <td className="py-3 px-4 text-[#73767D]">
+                        {formatBdDateTime(u.createdAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden">
+        <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] overflow-hidden">
           {auditLogs.length === 0 ? (
-            <div className="p-12 text-center text-xs text-slate-400">
+            <div className="p-12 text-center text-xs text-[#73767D]">
               No audit log events recorded yet.
             </div>
           ) : (
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold">
-                <tr>
-                  <th className="py-3 px-4">Action</th>
-                  <th className="py-3 px-4">Entity</th>
-                  <th className="py-3 px-4">Actor</th>
-                  <th className="py-3 px-4">Timestamp</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {auditLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50/60">
-                    <td className="py-3 px-4 font-bold text-slate-900">
-                      {log.action}
-                    </td>
-                    <td className="py-3 px-4 text-slate-600">
-                      {log.entity} {log.entityId ? `(#${log.entityId.slice(-5)})` : ""}
-                    </td>
-                    <td className="py-3 px-4 text-slate-600">
-                      {log.user?.name || "System"}
-                    </td>
-                    <td className="py-3 px-4 text-slate-400">
-                      {formatBdDateTime(log.createdAt)}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#F8F8FA] border-b border-[#EAEAEA] text-[#73767D] uppercase font-semibold">
+                  <tr>
+                    <th className="py-3 px-4">Action</th>
+                    <th className="py-3 px-4">Entity</th>
+                    <th className="py-3 px-4">Actor</th>
+                    <th className="py-3 px-4">Timestamp</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-[#EAEAEA]">
+                  {auditLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-[#F8F8FA]">
+                      <td className="py-3 px-4 font-bold text-[#181A1E]">
+                        {log.action}
+                      </td>
+                      <td className="py-3 px-4 text-[#73767D]">
+                        {log.entity} {log.entityId ? `(#${log.entityId.slice(-5)})` : ""}
+                      </td>
+                      <td className="py-3 px-4 text-[#73767D]">
+                        {log.user?.name || "System"}
+                      </td>
+                      <td className="py-3 px-4 text-[#73767D]">
+                        {formatBdDateTime(log.createdAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

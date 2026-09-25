@@ -169,14 +169,14 @@ export default function StaffPage() {
     return (
       <form
         onSubmit={onSubmit}
-        className="bg-white p-6 rounded-2xl border border-emerald-200 shadow-sm space-y-4"
+        className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] space-y-4"
       >
-        <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+        <h3 className="text-sm font-bold text-[#181A1E]">{title}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Name */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-              Full Name <span className="text-red-500">*</span>
+            <label className="block text-xs font-semibold text-[#181A1E] uppercase mb-1">
+              Full Name <span className="text-[#9E2A2B]">*</span>
             </label>
             <input
               type="text"
@@ -184,13 +184,13 @@ export default function StaffPage() {
               placeholder="e.g. Dr. Rina Islam"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] focus:border-[#F5C94A] focus:outline-none text-xs"
             />
           </div>
 
           {/* Role */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label className="block text-xs font-semibold text-[#181A1E] uppercase mb-1">
               Role / Designation
             </label>
             <input
@@ -198,13 +198,13 @@ export default function StaffPage() {
               placeholder="e.g. Senior Therapist"
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] focus:border-[#F5C94A] focus:outline-none text-xs"
             />
           </div>
 
           {/* Phone */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label className="block text-xs font-semibold text-[#181A1E] uppercase mb-1">
               Phone
             </label>
             <input
@@ -212,13 +212,13 @@ export default function StaffPage() {
               placeholder="e.g. 01711-123456"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] focus:border-[#F5C94A] focus:outline-none text-xs"
             />
           </div>
 
           {/* Email */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label className="block text-xs font-semibold text-[#181A1E] uppercase mb-1">
               Email
             </label>
             <input
@@ -226,7 +226,7 @@ export default function StaffPage() {
               placeholder="e.g. rina@clinic.com"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] focus:border-[#F5C94A] focus:outline-none text-xs"
             />
           </div>
         </div>
@@ -235,14 +235,14 @@ export default function StaffPage() {
           <button
             type="button"
             onClick={cancelForm}
-            className="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 transition"
+            className="px-4 py-2 bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl text-xs transition"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 flex items-center transition disabled:opacity-60"
+            className="px-4 py-2 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl text-xs flex items-center transition disabled:opacity-60"
           >
             {submitting && (
               <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
@@ -260,17 +260,17 @@ export default function StaffPage() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-950 tracking-tight">
+          <h1 className="text-2xl font-extrabold text-[#181A1E] tracking-tight">
             Staff
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-[#73767D] mt-1">
             Manage your team members, roles, and availability for bookings.
           </p>
         </div>
 
         <button
           onClick={openAdd}
-          className="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs transition"
+          className="inline-flex items-center px-4 py-2 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl text-xs transition"
         >
           <Plus className="w-4 h-4 mr-1.5" />
           Add Staff Member
@@ -290,13 +290,13 @@ export default function StaffPage() {
       {/* ── Content ── */}
       {loading ? (
         <div className="py-20 flex justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#181A1E]" />
         </div>
       ) : staff.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center text-slate-500 space-y-2">
-          <Users className="w-10 h-10 text-slate-300 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-800">No staff added yet</h3>
-          <p className="text-xs text-slate-400">
+        <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] text-center text-[#73767D] space-y-2">
+          <Users className="w-10 h-10 text-[#73767D] mx-auto" />
+          <h3 className="text-sm font-bold text-[#181A1E]">No staff added yet</h3>
+          <p className="text-xs text-[#73767D]">
             Add your team members so customers can choose who they book with.
           </p>
         </div>
@@ -309,17 +309,15 @@ export default function StaffPage() {
             return (
               <div
                 key={member.id}
-                className={`bg-white p-5 rounded-2xl border shadow-xs flex flex-col justify-between transition ${
-                  isEditingThis
-                    ? "border-emerald-300 ring-1 ring-emerald-200"
-                    : "border-slate-200/80"
+                className={`bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] flex flex-col justify-between transition ${
+                  isEditingThis ? "ring-2 ring-[#F5C94A]" : ""
                 }`}
               >
                 {/* ── Card top ── */}
                 <div className="flex items-start justify-between gap-3">
                   {/* Avatar / Initials */}
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 font-bold text-sm flex items-center justify-center flex-shrink-0 uppercase select-none">
+                    <div className="w-10 h-10 rounded-full bg-[#E3F5EC] text-[#184E37] border border-[#CBEAD9] font-bold text-sm flex items-center justify-center flex-shrink-0 uppercase select-none">
                       {member.photo ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -332,11 +330,11 @@ export default function StaffPage() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-slate-900 truncate">
+                      <h3 className="text-sm font-bold text-[#181A1E] truncate">
                         {member.name}
                       </h3>
                       {member.role && (
-                        <p className="text-xs text-slate-500 truncate">
+                        <p className="text-xs text-[#73767D] truncate">
                           {member.role}
                         </p>
                       )}
@@ -345,10 +343,10 @@ export default function StaffPage() {
 
                   {/* Status badge */}
                   <span
-                    className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                    className={`text-xs font-semibold px-2.5 py-0.5 rounded-full flex-shrink-0 ${
                       isActive
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-slate-100 text-slate-500"
+                        ? "bg-[#E3F5EC] text-[#184E37] border border-[#CBEAD9]"
+                        : "bg-[#FBF3DC] text-[#5B4712] border border-[#F2E2B6]"
                     }`}
                   >
                     {isActive ? "Active" : "Inactive"}
@@ -356,34 +354,34 @@ export default function StaffPage() {
                 </div>
 
                 {/* ── Contact info ── */}
-                <div className="mt-4 space-y-1.5">
+                <div className="mt-4 bg-[#F8F8FA] rounded-[14px] border border-[#EAEAEA] p-4 space-y-1.5">
                   {member.phone ? (
-                    <div className="flex items-center text-xs text-slate-600">
-                      <Phone className="w-3.5 h-3.5 mr-1.5 text-slate-400 flex-shrink-0" />
+                    <div className="flex items-center text-xs text-[#181A1E]">
+                      <Phone className="w-3.5 h-3.5 mr-1.5 text-[#73767D] flex-shrink-0" />
                       <span className="truncate">{member.phone}</span>
                     </div>
                   ) : null}
                   {member.email ? (
-                    <div className="flex items-center text-xs text-slate-600">
-                      <Mail className="w-3.5 h-3.5 mr-1.5 text-slate-400 flex-shrink-0" />
+                    <div className="flex items-center text-xs text-[#181A1E]">
+                      <Mail className="w-3.5 h-3.5 mr-1.5 text-[#73767D] flex-shrink-0" />
                       <span className="truncate">{member.email}</span>
                     </div>
                   ) : null}
                   {!member.phone && !member.email && (
-                    <p className="text-xs text-slate-400 italic">
+                    <p className="text-xs text-[#73767D] italic">
                       No contact info
                     </p>
                   )}
                 </div>
 
                 {/* ── Card actions ── */}
-                <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div className="pt-4 mt-4 border-t border-[#EAEAEA] flex items-center justify-between gap-2">
                   {/* Edit button */}
                   <button
                     onClick={() =>
                       isEditingThis ? cancelForm() : openEdit(member)
                     }
-                    className="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-emerald-700 transition"
+                    className="inline-flex items-center px-3 py-1.5 bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl text-xs transition"
                   >
                     {isEditingThis ? (
                       <>
@@ -402,10 +400,10 @@ export default function StaffPage() {
                   <button
                     onClick={() => toggleStatus(member)}
                     disabled={togglingId === member.id}
-                    className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold transition disabled:opacity-60 ${
+                    className={`inline-flex items-center px-3 py-1.5 text-xs transition disabled:opacity-60 ${
                       isActive
-                        ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                        ? "bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl"
+                        : "bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl"
                     }`}
                   >
                     {togglingId === member.id ? (

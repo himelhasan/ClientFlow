@@ -1,0 +1,37 @@
+{
+  "name": "ClientFlow — AI Business Operating System",
+  "short_name": "ClientFlow",
+  "description": "Multi-location scheduling, CRM, Unified Inbox, AI Receptionist, Loyalty & Marketing OS",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0F1115",
+  "theme_color": "#10B981",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "finance"],
+  "shortcuts": [
+    {
+      "name": "Calendar & Bookings",
+      "short_name": "Calendar",
+      "description": "View day, week, month & staff calendar",
+      "url": "/dashboard/bookings"
+    },
+    {
+      "name": "Unified Inbox",
+      "short_name": "Inbox",
+      "description": "WhatsApp, SMS & Email conversations",
+      "url": "/dashboard/messages"
+    },
+    {
+      "name": "Tasks & Follow-ups",
+      "short_name": "Tasks",
+      "description": "Manage CRM follow-ups and staff tasks",
+      "url": "/dashboard/tasks"
+    },
+    {
+      "name": "AI Command Center",
+      "short_name": "AI Suite",
+      "description": "AI Receptionist, Lead Qualifier & AI Booking",
+      "url": "/dashboard/ai"
+    }
+  ]
+}

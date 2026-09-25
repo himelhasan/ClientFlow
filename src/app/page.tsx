@@ -1,35 +1,42 @@
 import Link from "next/link";
-import { ArrowRight, Calendar, MessageSquare, CheckCircle, Smartphone, ShieldCheck, Zap, Users } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeProvider";
+import {
+  ArrowRight,
+  Calendar,
+  MessageSquare,
+  Smartphone,
+  ShieldCheck,
+  Zap,
+} from "lucide-react";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+    <div className="min-h-screen bg-[#F8F8F6] text-[#181A1E]">
       {/* Header */}
-      <header className="border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-[#EAEAEA] bg-white sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-xl shadow-sm shadow-emerald-500/20">
+            <div className="w-10 h-10 rounded-xl bg-[#F5C94A] flex items-center justify-center text-[#181A1E] font-bold text-xl">
               CF
             </div>
-            <div>
-              <span className="font-extrabold text-xl text-slate-900 tracking-tight">ClientFlow</span>
-              <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <div className="flex items-center">
+              <span className="font-extrabold text-xl text-[#181A1E] tracking-tight">
+                ClientFlow
+              </span>
+              <span className="ml-2 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#E3F5EC] text-[#181A1E]">
                 Bangladesh First
               </span>
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <ThemeToggle />
             <Link
               href="/login"
-              className="text-sm font-medium text-slate-600 hover:text-slate-900 transition"
+              className="text-sm bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl px-4 py-2 transition"
             >
               Sign In
             </Link>
             <Link
               href="/register"
-              className="text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg shadow-sm transition"
+              className="text-sm bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl px-4 py-2 transition"
             >
               Get Started
             </Link>
@@ -39,17 +46,17 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center">
-        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-100/70 text-emerald-800 text-xs font-semibold uppercase tracking-wider mb-6">
-          <Zap className="w-4 h-4 text-emerald-600" />
-          <span>Multi-Tenant Lead, Booking & Customer Automation</span>
+        <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-[#FBF3DC] text-[#181A1E] text-xs font-semibold uppercase tracking-wider mb-6">
+          <Zap className="w-4 h-4 text-[#181A1E]" />
+          <span>Multi-Tenant Lead, Booking &amp; Customer Automation</span>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-extrabold text-slate-950 tracking-tight leading-[1.15]">
+        <h1 className="text-4xl sm:text-6xl font-extrabold text-[#181A1E] tracking-tight leading-[1.15]">
           Capture every lead. <br />
-          <span className="text-emerald-600">Turn inquiries into bookings.</span>
+          <span>Turn inquiries into bookings.</span>
         </h1>
 
-        <p className="mt-6 text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+        <p className="mt-6 text-lg sm:text-xl text-[#73767D] max-w-3xl mx-auto leading-relaxed">
           Connect your website and social channels to one central platform. Automate customer communication
           via WhatsApp, SMS, and Email with built-in quota control tailored for Bangladeshi businesses.
         </p>
@@ -57,47 +64,55 @@ export default function HomePage() {
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             href="/register"
-            className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3.5 text-base font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-lg shadow-emerald-600/20 transition group"
+            className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3.5 text-base bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl transition group"
           >
             Start Business Onboarding
             <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition" />
           </Link>
           <Link
             href="/login"
-            className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3.5 text-base font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-sm transition"
+            className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3.5 text-base bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl transition"
           >
             Open Dashboard
           </Link>
         </div>
 
         {/* Feature Badges */}
-        <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
-          <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-center space-x-3">
-            <Smartphone className="w-6 h-6 text-emerald-600 shrink-0" />
+        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
+          <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-[#E3F5EC] flex items-center justify-center shrink-0">
+              <Smartphone className="w-5 h-5 text-[#181A1E]" />
+            </div>
             <div>
-              <p className="text-sm font-semibold text-slate-900">+880 E.164 Normalization</p>
-              <p className="text-xs text-slate-500">BD Mobile & WhatsApp</p>
+              <p className="text-sm font-semibold text-[#181A1E]">+880 E.164 Normalization</p>
+              <p className="text-xs text-[#73767D]">BD Mobile &amp; WhatsApp</p>
             </div>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-center space-x-3">
-            <MessageSquare className="w-6 h-6 text-emerald-600 shrink-0" />
+          <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-[#E2F2FA] flex items-center justify-center shrink-0">
+              <MessageSquare className="w-5 h-5 text-[#181A1E]" />
+            </div>
             <div>
-              <p className="text-sm font-semibold text-slate-900">WhatsApp & SMS</p>
-              <p className="text-xs text-slate-500">Automated Reminders</p>
+              <p className="text-sm font-semibold text-[#181A1E]">WhatsApp &amp; SMS</p>
+              <p className="text-xs text-[#73767D]">Automated Reminders</p>
             </div>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-center space-x-3">
-            <Calendar className="w-6 h-6 text-emerald-600 shrink-0" />
+          <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-[#FBF3DC] flex items-center justify-center shrink-0">
+              <Calendar className="w-5 h-5 text-[#181A1E]" />
+            </div>
             <div>
-              <p className="text-sm font-semibold text-slate-900">Smart Booking Engine</p>
-              <p className="text-xs text-slate-500">Buffer time & prayer breaks</p>
+              <p className="text-sm font-semibold text-[#181A1E]">Smart Booking Engine</p>
+              <p className="text-xs text-[#73767D]">Buffer time &amp; prayer breaks</p>
             </div>
           </div>
-          <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-center space-x-3">
-            <ShieldCheck className="w-6 h-6 text-emerald-600 shrink-0" />
+          <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-[#FAD4D6] flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5 text-[#181A1E]" />
+            </div>
             <div>
-              <p className="text-sm font-semibold text-slate-900">Tenant Isolation</p>
-              <p className="text-xs text-slate-500">Strict data security</p>
+              <p className="text-sm font-semibold text-[#181A1E]">Tenant Isolation</p>
+              <p className="text-xs text-[#73767D]">Strict data security</p>
             </div>
           </div>
         </div>
@@ -105,37 +120,40 @@ export default function HomePage() {
 
       {/* Architecture Visual */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
-        <div className="bg-slate-900 rounded-2xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
+        <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 sm:p-10 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)]">
           <div className="max-w-3xl">
-            <span className="text-emerald-400 font-mono text-xs uppercase tracking-widest">
+            <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#E2F2FA] text-[#181A1E] font-mono text-xs uppercase tracking-widest font-semibold">
               Central Operating System
             </span>
-            <h2 className="text-2xl sm:text-3xl font-bold mt-2">
-              Keep your website & socials. Let ClientFlow handle the rest.
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#181A1E] mt-3">
+              Keep your website &amp; socials. Let ClientFlow handle the rest.
             </h2>
-            <p className="mt-3 text-slate-300 text-sm sm:text-base leading-relaxed">
+            <p className="mt-3 text-[#73767D] text-sm sm:text-base leading-relaxed">
               Embed our lightweight widget or WordPress shortcode directly into your current site.
               Capture customers from Website, Facebook, and Instagram into unified CRM records with automated follow-ups.
             </p>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-800">
-            <div className="bg-slate-800/80 rounded-xl p-5 border border-slate-700">
-              <h3 className="text-sm font-bold text-emerald-400 mb-1">1. Embed Widget</h3>
-              <p className="text-xs text-slate-300">
-                Single-line JavaScript or WordPress shortcode <code className="text-slate-100 bg-slate-900 px-1 py-0.5 rounded">[clientflow_form]</code>.
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-[#EAEAEA]">
+            <div className="bg-[#F8F8FA] rounded-[14px] border border-[#EAEAEA] p-4">
+              <h3 className="text-sm font-bold text-[#181A1E] mb-1">1. Embed Widget</h3>
+              <p className="text-xs text-[#73767D]">
+                Single-line JavaScript or WordPress shortcode{" "}
+                <code className="text-[#181A1E] bg-white border border-[#EAEAEA] px-1.5 py-0.5 rounded">
+                  [clientflow_form]
+                </code>.
               </p>
             </div>
-            <div className="bg-slate-800/80 rounded-xl p-5 border border-slate-700">
-              <h3 className="text-sm font-bold text-emerald-400 mb-1">2. Lead Quota Economics</h3>
-              <p className="text-xs text-slate-300">
+            <div className="bg-[#F8F8FA] rounded-[14px] border border-[#EAEAEA] p-4">
+              <h3 className="text-sm font-bold text-[#181A1E] mb-1">2. Lead Quota Economics</h3>
+              <p className="text-xs text-[#73767D]">
                 Predictable starter plan from ৳500/month with 50 leads and included messaging allowances.
               </p>
             </div>
-            <div className="bg-slate-800/80 rounded-xl p-5 border border-slate-700">
-              <h3 className="text-sm font-bold text-emerald-400 mb-1">3. Automated Confirmation</h3>
-              <p className="text-xs text-slate-300">
-                Instant WhatsApp & SMS notifications with zero double-charge guarantee.
+            <div className="bg-[#F8F8FA] rounded-[14px] border border-[#EAEAEA] p-4">
+              <h3 className="text-sm font-bold text-[#181A1E] mb-1">3. Automated Confirmation</h3>
+              <p className="text-xs text-[#73767D]">
+                Instant WhatsApp &amp; SMS notifications with zero double-charge guarantee.
               </p>
             </div>
           </div>
@@ -143,8 +161,8 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 mt-20 py-8 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center text-xs text-slate-500">
+      <footer className="border-t border-[#EAEAEA] mt-20 py-8 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center text-xs text-[#73767D]">
           ClientFlow SaaS Platform — Tailored for businesses and professionals in Bangladesh.
         </div>
       </footer>

@@ -4,139 +4,169 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 60 11% 96.9%; /* #F8F8F6 */
+    --foreground: 220 11% 11%;  /* #181A1E */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;          /* #FFFFFF */
+    --card-foreground: 220 11% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 11% 11%;
 
-    --primary: 158 64% 36%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 45 90% 63%;      /* #F5C94A */
+    --primary-foreground: 220 11% 11%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 48 27% 93%;    /* #F3F1E8 */
+    --secondary-foreground: 220 11% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 240 12% 97.5%;     /* #F7F7F9 */
+    --muted-foreground: 222 5% 47%; /* #73767D */
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 48 27% 93%;
+    --accent-foreground: 220 11% 11%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 356 75% 58%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 158 64% 36%;
+    --border: 0 0% 91.8%;       /* #EAEAEA */
+    --input: 0 0% 91.8%;        /* #EAEAEA */
+    --ring: 45 90% 63%;         /* #F5C94A */
 
-    --radius: 0.65rem;
+    --radius: 1.125rem;         /* 18px */
   }
 
   .dark {
-    --background: 222.2 47.4% 6.5%;
-    --foreground: 210 40% 96%;
+    --background: 224 25% 8%;
+    --foreground: 60 10% 96%;
 
-    --card: 222.2 47.4% 9.5%;
-    --card-foreground: 210 40% 96%;
+    --card: 224 22% 11%;
+    --card-foreground: 60 10% 96%;
 
-    --popover: 222.2 47.4% 9.5%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 224 22% 11%;
+    --popover-foreground: 60 10% 96%;
 
-    --primary: 158 64% 42%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 45 90% 63%;
+    --primary-foreground: 220 11% 11%;
 
-    --secondary: 217.2 32.6% 14.5%;
-    --secondary-foreground: 210 40% 96%;
+    --secondary: 224 18% 16%;
+    --secondary-foreground: 60 10% 96%;
 
-    --muted: 217.2 32.6% 14.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 224 18% 15%;
+    --muted-foreground: 220 10% 65%;
 
-    --accent: 217.2 32.6% 14.5%;
-    --accent-foreground: 210 40% 96%;
+    --accent: 224 18% 16%;
+    --accent-foreground: 60 10% 96%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 158 64% 42%;
+    --border: 224 16% 18%;
+    --input: 224 16% 18%;
+    --ring: 45 90% 63%;
   }
 }
 
 body {
-  color: hsl(var(--foreground));
-  background: hsl(var(--background));
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #181a1e;
+  background-color: #f8f8f6;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* ============================================================================
-   Global Dark Mode Surface, Typography, Border & Input Adaptations
+   Unified Design System Enforcement across All Components & Routes
+   - Primary Accent: #F5C94A (Soft Yellow/Gold) with near-black text #181A1E
+   - Background: #F8F8F6
+   - Cards: #FFFFFF with #EAEAEA border and 18px-20px radius
+   - Inputs: #F8F8FA background with #EAEAEA border
    ============================================================================ */
-html.dark body {
-  background-color: #090d16;
-  color: #f1f5f9;
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+select,
+textarea {
+  background-color: #f8f8fa;
+  border-color: #eaeaea;
+  color: #181a1e;
+  border-radius: 0.75rem;
 }
 
-html.dark .bg-slate-50,
-html.dark .bg-slate-50\/80,
-html.dark .bg-slate-50\/70,
-html.dark .bg-slate-50\/60,
-html.dark .bg-slate-50\/50 {
-  background-color: #0f172a !important;
+input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):focus,
+select:focus,
+textarea:focus {
+  border-color: #f5c94a !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(245, 201, 74, 0.22) !important;
 }
 
-html.dark .bg-slate-100 {
-  background-color: #1e293b !important;
+/* Remap any legacy emerald utility classes across all secondary routes to the Soft Gold & Pastel Mint design system */
+.bg-emerald-600,
+.bg-emerald-500,
+.hover\:bg-emerald-700:hover,
+.hover\:bg-emerald-600:hover {
+  background-color: #f5c94a !important;
+  color: #181a1e !important;
 }
 
-html.dark .bg-white {
-  background-color: #111827 !important;
+.bg-emerald-50,
+.bg-emerald-500\/10,
+.bg-emerald-100 {
+  background-color: #e3f5ec !important;
+  color: #184e37 !important;
 }
 
-html.dark .text-slate-950,
-html.dark .text-slate-900,
-html.dark .text-slate-800 {
-  color: #f8fafc !important;
+.text-emerald-600,
+.text-emerald-700,
+.text-emerald-500 {
+  color: #184e37 !important;
 }
 
-html.dark .text-slate-700,
-html.dark .text-slate-600 {
-  color: #cbd5e1 !important;
+.border-emerald-200,
+.border-emerald-500\/20,
+.border-emerald-500\/30,
+.border-emerald-300 {
+  border-color: #cbead9 !important;
 }
 
-html.dark .text-slate-500,
-html.dark .text-slate-400 {
-  color: #94a3b8 !important;
+/* Remap slate borders & surfaces to clean #EAEAEA and #F8F8FA */
+.border-slate-200,
+.border-slate-200\/80,
+.border-slate-200\/70,
+.border-slate-300,
+.border-slate-100 {
+  border-color: #eaeaea !important;
 }
 
-html.dark .border-slate-200,
-html.dark .border-slate-200\/80,
-html.dark .border-slate-200\/70,
-html.dark .border-slate-200\/50,
-html.dark .border-slate-300,
-html.dark .border-slate-100 {
-  border-color: #1e293b !important;
+.bg-slate-50,
+.bg-slate-50\/80,
+.bg-slate-50\/60,
+.bg-slate-50\/50,
+.bg-slate-100 {
+  background-color: #f8f8fa !important;
 }
 
-html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
-html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #1e293b !important;
+.text-slate-950,
+.text-slate-900,
+.text-slate-800 {
+  color: #181a1e !important;
 }
 
-html.dark input:not([type="color"]):not([type="checkbox"]),
-html.dark select,
-html.dark textarea {
-  background-color: #0f172a !important;
-  border-color: #334155 !important;
-  color: #f8fafc !important;
+.text-slate-600,
+.text-slate-500,
+.text-slate-400 {
+  color: #73767d !important;
 }
 
-html.dark input::placeholder,
-html.dark textarea::placeholder {
-  color: #64748b !important;
+/* Subtle custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(160, 154, 138, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(160, 154, 138, 0.45);
 }

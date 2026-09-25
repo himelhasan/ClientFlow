@@ -177,34 +177,37 @@ export default function IntegrationsPage() {
   if (loading) {
     return (
       <div className="py-20 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#181A1E]" />
       </div>
     );
   }
+
+  const inputCls =
+    "w-full px-3 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-xs text-[#181A1E] focus:border-[#F5C94A] focus:outline-none";
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-extrabold text-slate-950 tracking-tight">
+        <h1 className="text-2xl font-extrabold text-[#181A1E] tracking-tight">
           Social, Messaging &amp; Payment Integrations
         </h1>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-[#73767D] mt-1">
           Connect Meta WhatsApp Cloud API, Facebook Lead Ads, Instagram DMs, Bangladesh SMS Gateways, and bKash.
         </p>
       </div>
 
       {/* Meta Webhook Endpoint Banner */}
-      <div className="bg-slate-900 text-white p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+      <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1.5">
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#E2F2FA] text-[#174A67] border border-[#C4E3F5]">
             Meta Graph API Webhook Callback URL
           </span>
-          <p className="text-xs font-mono text-slate-200 break-all">
+          <p className="text-xs font-mono font-bold text-[#181A1E] break-all pt-1">
             {metaCallbackUrl}
           </p>
-          <p className="text-[11px] text-slate-400">
-            Verify Token: <code className="text-emerald-300">clientflow_meta_verify_2026</code>
+          <p className="text-[11px] text-[#73767D]">
+            Verify Token: <code className="text-[#181A1E] bg-[#F8F8FA] px-1.5 py-0.5 rounded border border-[#EAEAEA] font-mono">clientflow_meta_verify_2026</code>
           </p>
         </div>
         <button
@@ -213,7 +216,7 @@ export default function IntegrationsPage() {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
           }}
-          className="inline-flex items-center px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-bold shrink-0"
+          className="inline-flex items-center px-4 py-2 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl text-xs shrink-0 transition"
         >
           {copied ? (
             <>
@@ -231,20 +234,20 @@ export default function IntegrationsPage() {
       {activeProvider && (
         <form
           onSubmit={handleSaveProvider}
-          className="bg-white p-6 rounded-2xl border border-emerald-300 shadow-sm space-y-4"
+          className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] space-y-4"
         >
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900">
+            <h3 className="text-sm font-bold text-[#181A1E]">
               Connect {activeProvider.name}
             </h3>
             <button type="button" onClick={() => setActiveProvider(null)}>
-              <X className="w-4 h-4 text-slate-400" />
+              <X className="w-4 h-4 text-[#73767D] hover:text-[#181A1E]" />
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {activeProvider.fields.map((fieldLabel: string) => (
               <div key={fieldLabel}>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                <label className="block text-xs font-semibold text-[#73767D] uppercase mb-1">
                   {fieldLabel} *
                 </label>
                 <input
@@ -258,7 +261,7 @@ export default function IntegrationsPage() {
                       [fieldLabel]: e.target.value,
                     })
                   }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+                  className={`${inputCls} font-mono`}
                 />
               </div>
             ))}
@@ -267,14 +270,14 @@ export default function IntegrationsPage() {
             <button
               type="button"
               onClick={() => setActiveProvider(null)}
-              className="px-4 py-2 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600"
+              className="px-4 py-2 bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl text-xs"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700"
+              className="px-4 py-2 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl text-xs"
             >
               Save &amp; Activate
             </button>
@@ -291,25 +294,25 @@ export default function IntegrationsPage() {
           return (
             <div
               key={p.id}
-              className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-4"
+              className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] flex flex-col justify-between space-y-4"
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                  <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-[#E2F2FA] text-[#174A67] border border-[#C4E3F5]">
                     {p.category}
                   </span>
                   {connected ? (
-                    <span className="inline-flex items-center text-[11px] font-bold text-emerald-700">
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Connected
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E3F5EC] text-[#184E37] border border-[#CBEAD9]">
+                      <CheckCircle2 className="w-3 h-3 mr-1" /> Connected
                     </span>
                   ) : (
-                    <span className="text-[11px] font-medium text-slate-400">
+                    <span className="text-[11px] font-medium text-[#73767D]">
                       Not connected
                     </span>
                   )}
                 </div>
-                <h3 className="text-sm font-bold text-slate-900">{p.name}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <h3 className="text-sm font-bold text-[#181A1E]">{p.name}</h3>
+                <p className="text-xs text-[#73767D] leading-relaxed">
                   {p.description}
                 </p>
               </div>
@@ -319,10 +322,10 @@ export default function IntegrationsPage() {
                   setActiveProvider(p);
                   setCredValues(connected?.credentials || {});
                 }}
-                className={`w-full py-2 rounded-xl text-xs font-bold transition ${
+                className={`w-full py-2 text-xs transition ${
                   connected
-                    ? "border border-slate-200 text-slate-700 hover:bg-slate-50"
-                    : "bg-emerald-600 text-white hover:bg-emerald-700"
+                    ? "bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl"
+                    : "bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl"
                 }`}
               >
                 {connected ? "Update Credentials" : "Connect Integration"}
@@ -333,13 +336,13 @@ export default function IntegrationsPage() {
       </div>
 
       {/* Live Social Lead & Message Webhook Simulator */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+      <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] space-y-4">
         <div>
-          <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <MessageCircle className="w-4 h-4 text-emerald-600" />
+          <h2 className="text-sm font-bold text-[#181A1E] flex items-center gap-2">
+            <MessageCircle className="w-4 h-4 text-[#181A1E]" />
             Test Inbound Social Lead &amp; Inbox Simulator
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-[#73767D] mt-0.5">
             Simulate an incoming Facebook Lead Ad, Instagram DM, or WhatsApp customer inquiry to test your pipeline &amp; Unified Inbox.
           </p>
         </div>
@@ -349,7 +352,7 @@ export default function IntegrationsPage() {
           className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end"
         >
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+            <label className="block text-[10px] font-bold text-[#73767D] uppercase mb-1">
               Channel
             </label>
             <select
@@ -357,7 +360,7 @@ export default function IntegrationsPage() {
               onChange={(e) =>
                 setSimForm({ ...simForm, channel: e.target.value })
               }
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+              className={inputCls}
             >
               <option value="FACEBOOK">Facebook Lead / Messenger</option>
               <option value="INSTAGRAM">Instagram Business DM</option>
@@ -366,7 +369,7 @@ export default function IntegrationsPage() {
             </select>
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+            <label className="block text-[10px] font-bold text-[#73767D] uppercase mb-1">
               Customer Name
             </label>
             <input
@@ -376,11 +379,11 @@ export default function IntegrationsPage() {
               onChange={(e) =>
                 setSimForm({ ...simForm, customerName: e.target.value })
               }
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+              className={inputCls}
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+            <label className="block text-[10px] font-bold text-[#73767D] uppercase mb-1">
               BD Phone
             </label>
             <input
@@ -390,14 +393,14 @@ export default function IntegrationsPage() {
               onChange={(e) =>
                 setSimForm({ ...simForm, customerPhone: e.target.value })
               }
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono"
+              className={`${inputCls} font-mono`}
             />
           </div>
           <div>
             <button
               type="submit"
               disabled={simulating}
-              className="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1.5"
+              className="w-full py-2 px-4 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5"
             >
               {simulating ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -415,27 +418,33 @@ export default function IntegrationsPage() {
               onChange={(e) =>
                 setSimForm({ ...simForm, messageContent: e.target.value })
               }
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+              className={inputCls}
             />
           </div>
         </form>
 
         {simResult && (
-          <div className="px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800">
+          <div
+            className={`px-4 py-2.5 rounded-xl text-xs font-semibold ${
+              simResult.startsWith("Error")
+                ? "bg-[#FAD4D6] text-[#9E2A2B] border border-[#F5BFC2]"
+                : "bg-[#E3F5EC] text-[#184E37] border border-[#CBEAD9]"
+            }`}
+          >
             {simResult}
           </div>
         )}
       </div>
 
       {/* Outgoing Developer Webhooks */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
+      <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <WebhookIcon className="w-4 h-4 text-slate-500" /> Outgoing
+            <h2 className="text-sm font-bold text-[#181A1E] flex items-center gap-2">
+              <WebhookIcon className="w-4 h-4 text-[#73767D]" /> Outgoing
               Developer Webhooks ({webhooks.length})
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-[#73767D] mt-0.5">
               Receive real-time JSON POST payloads on Zapier, Make, n8n, or your custom ERP when bookings or leads occur.
             </p>
           </div>
@@ -448,27 +457,27 @@ export default function IntegrationsPage() {
             placeholder="https://hooks.zapier.com/hooks/catch/..."
             value={webhookUrl}
             onChange={(e) => setWebhookUrl(e.target.value)}
-            className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono"
+            className="flex-1 px-3 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-xs text-[#181A1E] focus:border-[#F5C94A] focus:outline-none font-mono"
           />
           <button
             type="submit"
             disabled={saving}
-            className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800"
+            className="px-4 py-2 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] text-xs font-semibold rounded-xl"
           >
             Add Endpoint
           </button>
         </form>
 
         {webhooks.length > 0 && (
-          <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl">
+          <div className="space-y-2">
             {webhooks.map((wh) => (
               <div
                 key={wh.id}
-                className="p-3.5 flex items-center justify-between text-xs"
+                className="bg-[#F8F8FA] rounded-[14px] border border-[#EAEAEA] p-4 flex items-center justify-between text-xs"
               >
                 <div className="space-y-0.5">
-                  <p className="font-mono font-bold text-slate-800">{wh.url}</p>
-                  <p className="text-[11px] text-slate-400 font-mono">
+                  <p className="font-mono font-bold text-[#181A1E]">{wh.url}</p>
+                  <p className="text-[11px] text-[#73767D] font-mono">
                     Secret: {wh.secret}
                   </p>
                 </div>
@@ -479,7 +488,7 @@ export default function IntegrationsPage() {
                     });
                     setWebhooks((prev) => prev.filter((w) => w.id !== wh.id));
                   }}
-                  className="text-slate-400 hover:text-red-500"
+                  className="p-1.5 rounded-xl bg-[#F3F1E8] hover:bg-[#FAD4D6] text-[#73767D] hover:text-[#9E2A2B] transition"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

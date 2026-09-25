@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
   Target,
   MessageCircle,
@@ -12,6 +12,10 @@ import {
   ChevronUp,
   Clock,
   FileText,
+  Sparkles,
+  Flame,
+  Zap,
+  Snowflake,
 } from "lucide-react";
 import { formatBdDateTime, formatBdDate } from "@/lib/utils/bangladesh";
 
@@ -30,6 +34,10 @@ interface Lead {
   status: string;
   title: string | null;
   notes: string | null;
+  aiScore?: number | null;
+  aiQualification?: "HOT" | "WARM" | "COLD" | string | null;
+  aiSummary?: string | null;
+  recommendedAction?: string | null;
   whatsappSent: number;
   smsSent: number;
   createdAt: string;
@@ -80,25 +88,55 @@ const STATUS_OPTIONS = [
 ] as const;
 
 const STATUS_STYLES: Record<string, string> = {
-  NEW: "bg-slate-100 text-slate-700",
-  CONTACTED: "bg-blue-50 text-blue-700 border border-blue-200",
-  QUALIFIED: "bg-indigo-50 text-indigo-700 border border-indigo-200",
-  QUOTE_SENT: "bg-amber-50 text-amber-700 border border-amber-200",
-  BOOKING_PENDING: "bg-orange-50 text-orange-700 border border-orange-200",
-  BOOKED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  COMPLETED: "bg-teal-50 text-teal-700 border border-teal-200",
-  LOST: "bg-red-50 text-red-700 border border-red-200",
-  CANCELLED: "bg-rose-50 text-rose-700 border border-rose-200",
+  NEW: "bg-[#FBF3DC] text-[#5B4712] border border-[#F2E2B6]",
+  CONTACTED: "bg-[#E2F2FA] text-[#174A67] border border-[#C4E3F5]",
+  QUALIFIED: "bg-[#E2F2FA] text-[#174A67] border border-[#C4E3F5]",
+  QUOTE_SENT: "bg-[#FBF3DC] text-[#5B4712] border border-[#F2E2B6]",
+  BOOKING_PENDING: "bg-[#FBF3DC] text-[#5B4712] border border-[#F2E2B6]",
+  BOOKED: "bg-[#E3F5EC] text-[#184E37] border border-[#CBEAD9]",
+  COMPLETED: "bg-[#E3F5EC] text-[#184E37] border border-[#CBEAD9]",
+  LOST: "bg-[#FAD4D6] text-[#9E2A2B] border border-[#F5BFC2]",
+  CANCELLED: "bg-[#FAD4D6] text-[#9E2A2B] border border-[#F5BFC2]",
 };
 
 const SOURCE_COLORS: Record<string, string> = {
-  WEBSITE: "bg-slate-100 text-slate-700 border-slate-200",
-  FACEBOOK: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  INSTAGRAM: "bg-rose-50 text-rose-700 border-rose-200",
-  WHATSAPP: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  GOOGLE: "bg-amber-50 text-amber-700 border-amber-200",
-  MANUAL: "bg-slate-100 text-slate-600 border-slate-200",
+  WEBSITE: "bg-[#E2F2FA] text-[#174A67] border border-[#C4E3F5]",
+  FACEBOOK: "bg-[#E2F2FA] text-[#174A67] border border-[#C4E3F5]",
+  INSTAGRAM: "bg-[#FAD4D6] text-[#9E2A2B] border border-[#F5BFC2]",
+  WHATSAPP: "bg-[#E3F5EC] text-[#184E37] border border-[#CBEAD9]",
+  GOOGLE: "bg-[#FBF3DC] text-[#5B4712] border border-[#F2E2B6]",
+  MANUAL: "bg-[#F3F1E8] text-[#262930] border border-[#EAEAEA]",
 };
+
+function computeClientSideFallbackScore(lead: Lead) {
+  if (lead.aiScore != null && lead.aiQualification) {
+    return {
+      aiScore: lead.aiScore,
+      aiQualification: lead.aiQualification,
+      aiSummary:
+        lead.aiSummary ||
+        `AI scored ${lead.aiScore}/100 (${lead.aiQualification}) based on ${lead.source} intent and service inquiry.`,
+    };
+  }
+  const text = `${lead.title || ""} ${lead.notes || ""}`.toLowerCase();
+  let score = 64;
+  if (lead.source === "WHATSAPP" || lead.source === "PHONE") score += 14;
+  if (/urgent|today|tomorrow|bridal|package|vip|serial/.test(text)) score += 15;
+  if (lead.status === "BOOKED" || lead.status === "QUALIFIED") score = Math.max(score, 86);
+  if (lead.status === "LOST" || lead.status === "CANCELLED") score = 28;
+  score = Math.min(98, Math.max(20, score));
+  const qual = score >= 76 ? "HOT" : score >= 52 ? "WARM" : "COLD";
+  return {
+    aiScore: score,
+    aiQualification: qual,
+    aiSummary:
+      qual === "HOT"
+        ? `High-intent ${lead.source} inquiry (${score}/100). Strong readiness to book ${lead.title || "appointment"}.`
+        : qual === "WARM"
+        ? `Moderate-intent ${lead.source} lead (${score}/100). Share service pricing and available slots.`
+        : `Early-stage inquiry (${score}/100). Enroll in automated WhatsApp follow-up sequence.`,
+  };
+}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -106,11 +144,14 @@ export default function LeadsPipeline() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [qualifyingId, setQualifyingId] = useState<string | null>(null);
+  const [bulkQualifying, setBulkQualifying] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Filters
   const [sourceFilter, setSourceFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [aiFilter, setAiFilter] = useState("ALL");
 
   // Add Lead form
   const [showNew, setShowNew] = useState(false);
@@ -134,7 +175,13 @@ export default function LeadsPipeline() {
       if (statusFilter !== "ALL") params.set("status", statusFilter);
       const res = await fetch(`/api/v1/leads?${params}`);
       const data = await res.json();
-      setLeads(data.leads || []);
+      const rawLeads: Lead[] = data.leads || [];
+      setLeads(
+        rawLeads.map((l) => ({
+          ...l,
+          ...computeClientSideFallbackScore(l),
+        }))
+      );
     } catch (err) {
       console.error(err);
     } finally {
@@ -146,6 +193,90 @@ export default function LeadsPipeline() {
     loadLeads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceFilter, statusFilter]);
+
+  // ── Single Lead AI Qualification ──
+  async function handleQualifyLead(lead: Lead, e?: React.MouseEvent) {
+    if (e) e.stopPropagation();
+    setQualifyingId(lead.id);
+    try {
+      const res = await fetch("/api/v1/ai/suite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "QUALIFY_LEAD",
+          leadId: lead.id,
+          customLead: {
+            title: lead.title,
+            notes: lead.notes,
+            source: lead.source,
+            status: lead.status,
+            customerName: lead.customer?.name,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.aiScore != null) {
+        setLeads((prev) =>
+          prev.map((item) =>
+            item.id === lead.id
+              ? {
+                  ...item,
+                  aiScore: data.aiScore,
+                  aiQualification: data.aiQualification,
+                  aiSummary: data.aiSummary,
+                  recommendedAction: data.recommendedAction,
+                }
+              : item
+          )
+        );
+        setExpandedId(lead.id);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setQualifyingId(null);
+    }
+  }
+
+  // ── Bulk AI Qualification ──
+  async function handleBulkQualify() {
+    setBulkQualifying(true);
+    try {
+      const res = await fetch("/api/v1/ai/suite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "QUALIFY_LEAD",
+          bulk: true,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.results)) {
+        const mapById = new Map<string, any>();
+        for (const r of data.results) {
+          mapById.set(r.leadId, r);
+        }
+        setLeads((prev) =>
+          prev.map((l) => {
+            const found = mapById.get(l.id);
+            return found
+              ? {
+                  ...l,
+                  aiScore: found.aiScore,
+                  aiQualification: found.aiQualification,
+                  aiSummary: found.aiSummary,
+                  recommendedAction: found.recommendedAction,
+                }
+              : l;
+          })
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setBulkQualifying(false);
+    }
+  }
 
   // ── Status change ──
   async function handleStatusChange(leadId: string, status: string) {
@@ -187,9 +318,13 @@ export default function LeadsPipeline() {
       });
       const data = await res.json();
       if (res.ok && data.lead) {
+        const enriched = {
+          ...data.lead,
+          ...computeClientSideFallbackScore(data.lead),
+        };
         setShowNew(false);
         setNewForm(emptyForm);
-        setLeads((prev) => [data.lead, ...prev]);
+        setLeads((prev) => [enriched, ...prev]);
       } else {
         setFormError(data.error || "Failed to create lead");
       }
@@ -200,47 +335,137 @@ export default function LeadsPipeline() {
     }
   }
 
-  // ── Derived counts ──
-  const totalLeads = leads.length;
+  const filteredLeads = leads.filter((l) =>
+    aiFilter === "ALL" ? true : l.aiQualification === aiFilter
+  );
+
+  const hotCount = leads.filter((l) => l.aiQualification === "HOT").length;
+  const warmCount = leads.filter((l) => l.aiQualification === "WARM").length;
+  const coldCount = leads.filter((l) => l.aiQualification === "COLD").length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-[#F8F8F6] text-[#181A1E]">
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-950 tracking-tight">
-            Lead Management &amp; Pipeline
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Track inquiries captured across Website forms, Facebook, Instagram, and WhatsApp.{" "}
-            <span className="font-semibold text-slate-700">{totalLeads}</span> leads shown.
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-extrabold text-[#181A1E] tracking-tight">
+              Client Enquiries &amp; AI Lead Pipeline
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FBF3DC] text-[#5B4712] border border-[#F2E2B6]">
+              v2 AI SCORING
+            </span>
+          </div>
+          <p className="text-xs text-[#73767D] mt-1">
+            Track &amp; auto-qualify inquiries captured across Website forms,
+            Facebook, Instagram, and WhatsApp.{" "}
+            <span className="font-semibold text-[#181A1E]">
+              {filteredLeads.length}
+            </span>{" "}
+            leads shown.
           </p>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2.5 self-start">
+          <button
+            type="button"
+            onClick={handleBulkQualify}
+            disabled={bulkQualifying}
+            className="inline-flex items-center px-3.5 py-2.5 bg-[#181A1E] hover:bg-[#262930] text-white font-semibold rounded-xl text-xs transition whitespace-nowrap"
+          >
+            {bulkQualifying ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5 text-[#F5C94A]" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5 mr-1.5 text-[#F5C94A]" />
+            )}
+            Run AI Lead Qualification (Bulk)
+          </button>
+
+          <button
+            onClick={() => {
+              setShowNew(true);
+              setFormError("");
+            }}
+            className="inline-flex items-center px-4 py-2.5 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl text-xs transition whitespace-nowrap"
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            New Enquiry
+          </button>
+        </div>
+      </div>
+
+      {/* ── AI Qualification Summary Cards ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <button
-          onClick={() => {
-            setShowNew(true);
-            setFormError("");
-          }}
-          className="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs transition whitespace-nowrap self-start"
+          type="button"
+          onClick={() => setAiFilter("ALL")}
+          className={`p-6 rounded-[20px] border shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] text-left transition ${
+            aiFilter === "ALL"
+              ? "bg-[#F5C94A] text-[#181A1E] border-[#F5C94A]"
+              : "bg-white text-[#181A1E] border-[#EAEAEA]"
+          }`}
         >
-          <Plus className="w-4 h-4 mr-1.5" />
-          Add Lead
+          <p className="text-[11px] font-semibold text-[#73767D]">Total Pipeline</p>
+          <p className="text-xl font-black mt-0.5">{leads.length} Leads</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setAiFilter(aiFilter === "HOT" ? "ALL" : "HOT")}
+          className={`p-6 rounded-[20px] border shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] text-left transition ${
+            aiFilter === "HOT"
+              ? "bg-[#FAD4D6] text-[#9E2A2B] border-[#F5BFC2]"
+              : "bg-white text-[#181A1E] border-[#EAEAEA]"
+          }`}
+        >
+          <p className="text-[11px] font-bold text-[#9E2A2B] flex items-center gap-1">
+            <Flame className="w-3.5 h-3.5" /> HOT Leads 🔥 (76–100)
+          </p>
+          <p className="text-xl font-black mt-0.5">{hotCount}</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setAiFilter(aiFilter === "WARM" ? "ALL" : "WARM")}
+          className={`p-6 rounded-[20px] border shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] text-left transition ${
+            aiFilter === "WARM"
+              ? "bg-[#FBF3DC] text-[#5B4712] border-[#F2E2B6]"
+              : "bg-white text-[#181A1E] border-[#EAEAEA]"
+          }`}
+        >
+          <p className="text-[11px] font-bold text-[#5B4712] flex items-center gap-1">
+            <Zap className="w-3.5 h-3.5" /> WARM Leads ⚡ (52–75)
+          </p>
+          <p className="text-xl font-black mt-0.5">{warmCount}</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setAiFilter(aiFilter === "COLD" ? "ALL" : "COLD")}
+          className={`p-6 rounded-[20px] border shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] text-left transition ${
+            aiFilter === "COLD"
+              ? "bg-[#E2F2FA] text-[#174A67] border-[#C4E3F5]"
+              : "bg-white text-[#181A1E] border-[#EAEAEA]"
+          }`}
+        >
+          <p className="text-[11px] font-bold text-[#174A67] flex items-center gap-1">
+            <Snowflake className="w-3.5 h-3.5" /> COLD Leads ❄️ (&lt;52)
+          </p>
+          <p className="text-xl font-black mt-0.5">{coldCount}</p>
         </button>
       </div>
 
       {/* ── Filters ── */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap">
-        {/* Source pills */}
-        <div className="flex items-center gap-1 flex-wrap bg-white p-1 rounded-xl border border-slate-200 shadow-xs text-xs font-semibold">
+        <div className="flex items-center gap-1.5 flex-wrap bg-[#F8F8FA] p-1.5 rounded-[14px] border border-[#EAEAEA] text-xs">
           {SOURCE_FILTER_PILLS.map((s) => (
             <button
               key={s}
               onClick={() => setSourceFilter(s)}
-              className={`px-3 py-1.5 rounded-lg transition ${
+              className={`px-3.5 py-1.5 transition-all ${
                 sourceFilter === s
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                  ? "bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl"
+                  : "bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl"
               }`}
             >
               {s}
@@ -248,12 +473,11 @@ export default function LeadsPipeline() {
           ))}
         </div>
 
-        {/* Status dropdown */}
         <div className="relative">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="appearance-none pl-3 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 shadow-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer"
+            className="appearance-none pl-3 pr-8 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-xs font-semibold text-[#181A1E] focus:border-[#F5C94A] focus:outline-none cursor-pointer"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
@@ -261,7 +485,7 @@ export default function LeadsPipeline() {
               </option>
             ))}
           </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#73767D] pointer-events-none" />
         </div>
       </div>
 
@@ -269,10 +493,10 @@ export default function LeadsPipeline() {
       {showNew && (
         <form
           onSubmit={handleCreateLead}
-          className="bg-white p-6 rounded-2xl border border-emerald-200 shadow-sm space-y-4"
+          className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] space-y-4"
         >
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900">Add New Lead</h3>
+            <h3 className="text-sm font-bold text-[#181A1E]">Add New Lead</h3>
             <button
               type="button"
               onClick={() => {
@@ -281,19 +505,19 @@ export default function LeadsPipeline() {
                 setFormError("");
               }}
             >
-              <X className="w-4 h-4 text-slate-400 hover:text-slate-700" />
+              <X className="w-4 h-4 text-[#73767D] hover:text-[#181A1E]" />
             </button>
           </div>
 
           {formError && (
-            <p className="text-xs text-red-600 font-medium bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <p className="text-xs text-[#9E2A2B] font-medium bg-[#FAD4D6] border border-[#F5BFC2] rounded-xl px-3 py-2">
               {formError}
             </p>
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+              <label className="block text-xs font-semibold text-[#181A1E] uppercase mb-1">
                 Customer Name *
               </label>
               <input
@@ -304,12 +528,12 @@ export default function LeadsPipeline() {
                 onChange={(e) =>
                   setNewForm({ ...newForm, customerName: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] text-xs focus:border-[#F5C94A] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+              <label className="block text-xs font-semibold text-[#181A1E] uppercase mb-1">
                 Phone *
               </label>
               <input
@@ -320,12 +544,12 @@ export default function LeadsPipeline() {
                 onChange={(e) =>
                   setNewForm({ ...newForm, customerPhone: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] text-xs focus:border-[#F5C94A] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+              <label className="block text-xs font-semibold text-[#181A1E] uppercase mb-1">
                 Source
               </label>
               <select
@@ -333,7 +557,7 @@ export default function LeadsPipeline() {
                 onChange={(e) =>
                   setNewForm({ ...newForm, source: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] text-xs focus:border-[#F5C94A] focus:outline-none"
               >
                 {LEAD_SOURCES.map((src) => (
                   <option key={src} value={src}>
@@ -344,33 +568,33 @@ export default function LeadsPipeline() {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+              <label className="block text-xs font-semibold text-[#181A1E] uppercase mb-1">
                 Title / Service Description
               </label>
               <input
                 type="text"
-                placeholder="e.g. AC Repair, Hair Cut, Legal Consultation"
+                placeholder="e.g. Bridal Makeover Package, Dental Scaling, Hair Spa"
                 value={newForm.title}
                 onChange={(e) =>
                   setNewForm({ ...newForm, title: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] text-xs focus:border-[#F5C94A] focus:outline-none"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label className="block text-xs font-semibold text-[#181A1E] uppercase mb-1">
               Notes
             </label>
             <textarea
               rows={2}
-              placeholder="Additional notes about this lead…"
+              placeholder="Urgency, budget, or customer requests…"
               value={newForm.notes}
               onChange={(e) =>
                 setNewForm({ ...newForm, notes: e.target.value })
               }
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none"
+              className="w-full px-3 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] text-xs focus:border-[#F5C94A] focus:outline-none resize-none"
             />
           </div>
 
@@ -382,14 +606,14 @@ export default function LeadsPipeline() {
                 setNewForm(emptyForm);
                 setFormError("");
               }}
-              className="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50"
+              className="px-4 py-2 bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl text-xs"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 flex items-center disabled:opacity-60"
+              className="px-4 py-2 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl text-xs flex items-center disabled:opacity-60"
             >
               {submitting && (
                 <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
@@ -403,54 +627,51 @@ export default function LeadsPipeline() {
       {/* ── Table ── */}
       {loading ? (
         <div className="py-20 flex justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#181A1E]" />
         </div>
-      ) : leads.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center text-slate-500 space-y-2">
-          <Target className="w-10 h-10 text-slate-300 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-800">No leads found</h3>
-          <p className="text-xs text-slate-400">
-            {sourceFilter !== "ALL" || statusFilter !== "ALL"
-              ? "Try adjusting your filters, or add a lead manually."
-              : "When visitors submit your widget form or initiate inquiries, they will appear here."}
+      ) : filteredLeads.length === 0 ? (
+        <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] py-12 text-center text-[#73767D] space-y-2">
+          <Target className="w-10 h-10 text-[#73767D] mx-auto" />
+          <h3 className="text-sm font-bold text-[#181A1E]">No leads found</h3>
+          <p className="text-xs text-[#73767D]">
+            Try adjusting your filters or add a lead manually.
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 uppercase tracking-wider font-semibold">
+              <thead className="bg-[#F8F8FA] border-b border-[#EAEAEA] text-[#73767D] uppercase tracking-wider font-semibold">
                 <tr>
                   <th className="py-3.5 px-4">Customer</th>
                   <th className="py-3.5 px-4">Source</th>
-                  <th className="py-3.5 px-4">Title / Service</th>
-                  <th className="py-3.5 px-4">Notes</th>
+                  <th className="py-3.5 px-4">AI Qualification (0-100)</th>
+                  <th className="py-3.5 px-4">Title / AI Summary</th>
                   <th className="py-3.5 px-4">Messaging</th>
                   <th className="py-3.5 px-4">Status</th>
                   <th className="py-3.5 px-4">Captured</th>
-                  <th className="py-3.5 px-4 text-right">Update</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {leads.map((l) => (
-                  <>
+              <tbody className="divide-y divide-[#EAEAEA]">
+                {filteredLeads.map((l) => (
+                  <Fragment key={l.id}>
                     <tr
-                      key={l.id}
-                      className="hover:bg-slate-50/60 transition cursor-pointer"
+                      className="hover:bg-[#F8F8FA] transition cursor-pointer"
                       onClick={() =>
                         setExpandedId(expandedId === l.id ? null : l.id)
                       }
                     >
                       {/* Customer */}
                       <td className="py-3.5 px-4">
-                        <p className="font-bold text-slate-900">
+                        <p className="font-bold text-[#181A1E]">
                           {l.customer?.name}
                         </p>
-                        <p className="text-slate-500 text-[11px] font-mono">
+                        <p className="text-[#73767D] text-[11px] font-mono">
                           {l.customer?.phone}
                         </p>
                         {l.form && (
-                          <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-0.5">
+                          <p className="text-[10px] text-[#73767D] mt-0.5 flex items-center gap-0.5">
                             <FileText className="w-2.5 h-2.5" />
                             {l.form.name}
                           </p>
@@ -460,58 +681,61 @@ export default function LeadsPipeline() {
                       {/* Source */}
                       <td className="py-3.5 px-4">
                         <span
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
                             SOURCE_COLORS[l.source] ||
-                            "bg-slate-100 text-slate-700 border-slate-200"
+                            "bg-[#F3F1E8] text-[#181A1E] border border-[#EAEAEA]"
                           }`}
                         >
                           {l.source.replace("_", " ")}
                         </span>
                       </td>
 
-                      {/* Title */}
-                      <td className="py-3.5 px-4 text-slate-700 font-medium max-w-[160px]">
-                        <span className="truncate block">
-                          {l.title || "Inquiry"}
-                        </span>
-                        {l.bookings.length > 0 && (
-                          <span className="text-[10px] text-emerald-700">
-                            {l.bookings[0].service?.name}
-                          </span>
-                        )}
+                      {/* AI Score Badge */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          {l.aiQualification === "HOT" && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#FAD4D6] text-[#9E2A2B] border border-[#F5BFC2]">
+                              🔥 HOT • {l.aiScore}/100
+                            </span>
+                          )}
+                          {l.aiQualification === "WARM" && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#FBF3DC] text-[#5B4712] border border-[#F2E2B6]">
+                              ⚡ WARM • {l.aiScore}/100
+                            </span>
+                          )}
+                          {l.aiQualification === "COLD" && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#E2F2FA] text-[#174A67] border border-[#C4E3F5]">
+                              ❄️ COLD • {l.aiScore}/100
+                            </span>
+                          )}
+                        </div>
                       </td>
 
-                      {/* Notes */}
-                      <td className="py-3.5 px-4 max-w-[180px]">
-                        {l.notes ? (
-                          <span
-                            className="text-slate-500 italic block truncate"
-                            title={l.notes}
-                          >
-                            {l.notes.length > 50
-                              ? `${l.notes.slice(0, 50)}…`
-                              : l.notes}
-                          </span>
-                        ) : (
-                          <span className="text-slate-300">—</span>
-                        )}
+                      {/* Title & AI Summary */}
+                      <td className="py-3.5 px-4 max-w-[260px]">
+                        <span className="font-bold text-[#181A1E] truncate block">
+                          {l.title || "Inquiry"}
+                        </span>
+                        <span
+                          className="text-[11px] text-[#73767D] line-clamp-2 block mt-0.5"
+                          title={l.aiSummary || l.notes || ""}
+                        >
+                          {l.aiSummary || l.notes || "—"}
+                        </span>
                       </td>
 
                       {/* Messaging counts */}
                       <td className="py-3.5 px-4">
-                        <div className="flex items-center space-x-3 text-[11px] font-semibold text-slate-600">
+                        <div className="flex items-center space-x-3 text-[11px] font-semibold text-[#181A1E]">
                           <span
                             className="flex items-center"
                             title="WhatsApp sent"
                           >
-                            <MessageCircle className="w-3.5 h-3.5 text-emerald-600 mr-1" />
+                            <MessageCircle className="w-3.5 h-3.5 text-[#181A1E] mr-1" />
                             {l.whatsappSent}/3
                           </span>
-                          <span
-                            className="flex items-center"
-                            title="SMS sent"
-                          >
-                            <Phone className="w-3.5 h-3.5 text-blue-600 mr-1" />
+                          <span className="flex items-center" title="SMS sent">
+                            <Phone className="w-3.5 h-3.5 text-[#73767D] mr-1" />
                             {l.smsSent}/2
                           </span>
                         </div>
@@ -522,7 +746,7 @@ export default function LeadsPipeline() {
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
                             STATUS_STYLES[l.status] ||
-                            "bg-slate-100 text-slate-700"
+                            "bg-[#F3F1E8] text-[#181A1E] border border-[#EAEAEA]"
                           }`}
                         >
                           {l.status.replace("_", " ")}
@@ -530,31 +754,48 @@ export default function LeadsPipeline() {
                       </td>
 
                       {/* Captured at */}
-                      <td className="py-3.5 px-4 text-slate-500 text-[11px]">
+                      <td className="py-3.5 px-4 text-[#73767D] text-[11px]">
                         {formatBdDateTime(l.createdAt)}
                       </td>
 
-                      {/* Status select + expand toggle */}
+                      {/* AI Qualify button + Status select */}
                       <td
                         className="py-3.5 px-4 text-right"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => handleQualifyLead(l, e)}
+                            disabled={qualifyingId === l.id}
+                            title="Run AI Lead Qualification"
+                            className="px-2.5 py-1 bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] rounded-xl text-[11px] font-semibold inline-flex items-center gap-1 transition"
+                          >
+                            {qualifyingId === l.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Sparkles className="w-3 h-3" />
+                            )}
+                            AI Qualify
+                          </button>
+
                           {updatingId === l.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                            <Loader2 className="w-4 h-4 animate-spin text-[#181A1E]" />
                           ) : (
                             <select
                               value={l.status}
                               onChange={(e) =>
                                 handleStatusChange(l.id, e.target.value)
                               }
-                              className="px-2 py-1 bg-slate-50 border border-slate-200 rounded text-slate-700 text-xs font-medium focus:outline-none"
+                              className="px-2 py-1 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] text-xs font-medium focus:border-[#F5C94A] focus:outline-none"
                             >
                               <option value="NEW">NEW</option>
                               <option value="CONTACTED">CONTACTED</option>
                               <option value="QUALIFIED">QUALIFIED</option>
                               <option value="QUOTE_SENT">QUOTE SENT</option>
-                              <option value="BOOKING_PENDING">BOOKING PENDING</option>
+                              <option value="BOOKING_PENDING">
+                                BOOKING PENDING
+                              </option>
                               <option value="BOOKED">BOOKED</option>
                               <option value="COMPLETED">COMPLETED</option>
                               <option value="LOST">LOST</option>
@@ -562,47 +803,76 @@ export default function LeadsPipeline() {
                             </select>
                           )}
                           {expandedId === l.id ? (
-                            <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+                            <ChevronUp className="w-3.5 h-3.5 text-[#73767D]" />
                           ) : (
-                            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                            <ChevronDown className="w-3.5 h-3.5 text-[#73767D]" />
                           )}
                         </div>
                       </td>
                     </tr>
 
-                    {/* ── Expanded: recent events ── */}
+                    {/* ── Expanded: AI Summary + Recent Events ── */}
                     {expandedId === l.id && (
-                      <tr key={`${l.id}-expanded`} className="bg-slate-50/60">
-                        <td colSpan={8} className="px-6 py-4">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                            Recent Activity
-                          </p>
-                          {l.events.length === 0 ? (
-                            <p className="text-xs text-slate-400 italic">
-                              No events recorded for this lead.
-                            </p>
-                          ) : (
-                            <ul className="space-y-1.5">
-                              {l.events.map((ev) => (
-                                <li
-                                  key={ev.id}
-                                  className="flex items-start gap-2 text-xs text-slate-600"
-                                >
-                                  <Clock className="w-3 h-3 text-slate-400 mt-0.5 shrink-0" />
-                                  <span className="flex-1">
-                                    {ev.description}
-                                  </span>
-                                  <span className="text-[10px] text-slate-400 shrink-0">
-                                    {formatBdDate(ev.createdAt)}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
+                      <tr key={`${l.id}-expanded`}>
+                        <td colSpan={8} className="px-4 py-3">
+                          <div className="bg-[#F8F8FA] rounded-[14px] border border-[#EAEAEA] p-4 space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#EAEAEA]">
+                              <div>
+                                <p className="text-[10px] font-bold text-[#73767D] uppercase tracking-wider">
+                                  AI Lead Intelligence Summary
+                                </p>
+                                <p className="text-xs font-semibold text-[#181A1E] mt-0.5">
+                                  {l.aiSummary}
+                                </p>
+                                {l.recommendedAction && (
+                                  <p className="text-[11px] font-bold text-[#184E37] mt-1">
+                                    Recommended Next Action:{" "}
+                                    {l.recommendedAction}
+                                  </p>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => handleQualifyLead(l, e)}
+                                className="px-3 py-1.5 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-bold rounded-xl text-xs inline-flex items-center gap-1.5 self-start"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                Re-Calculate AI Score
+                              </button>
+                            </div>
+
+                            <div>
+                              <p className="text-[10px] font-bold text-[#73767D] uppercase tracking-wider mb-2">
+                                Recent Activity
+                              </p>
+                              {l.events.length === 0 ? (
+                                <p className="text-xs text-[#73767D] italic">
+                                  No events recorded for this lead.
+                                </p>
+                              ) : (
+                                <ul className="space-y-1.5">
+                                  {l.events.map((ev) => (
+                                    <li
+                                      key={ev.id}
+                                      className="flex items-start gap-2 text-xs text-[#181A1E]"
+                                    >
+                                      <Clock className="w-3 h-3 text-[#73767D] mt-0.5 shrink-0" />
+                                      <span className="flex-1">
+                                        {ev.description}
+                                      </span>
+                                      <span className="text-[10px] text-[#73767D] shrink-0">
+                                        {formatBdDate(ev.createdAt)}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          </div>
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>

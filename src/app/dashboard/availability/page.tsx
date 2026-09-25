@@ -90,16 +90,16 @@ function DayRow({ config, onChange, onSave, saveState }: DayRowProps) {
   }
 
   const labelCls =
-    "block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1";
+    "block text-[10px] font-bold text-[#73767D] uppercase tracking-wider mb-1";
   const inputCls =
-    "w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-slate-50 text-slate-800 font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed";
+    "w-full px-2.5 py-1.5 text-xs bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-[#181A1E] focus:border-[#F5C94A] focus:outline-none font-mono disabled:opacity-40 disabled:cursor-not-allowed";
 
   return (
     <div
-      className={`grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-4 px-5 py-4 rounded-xl border transition ${
+      className={`grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-4 transition ${
         config.isWorkingDay
-          ? "bg-white border-slate-200/80 shadow-xs"
-          : "bg-slate-50/60 border-slate-200/50"
+          ? "bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)]"
+          : "bg-[#F8F8FA] rounded-[14px] border border-[#EAEAEA] p-4"
       }`}
     >
       {/* Day label + toggle */}
@@ -107,32 +107,34 @@ function DayRow({ config, onChange, onSave, saveState }: DayRowProps) {
         <button
           type="button"
           onClick={() => field("isWorkingDay", !config.isWorkingDay)}
-          className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition ${
+          className={`flex-shrink-0 w-5 h-5 rounded-md border flex items-center justify-center transition ${
             config.isWorkingDay
-              ? "bg-emerald-600 border-emerald-600"
-              : "bg-white border-slate-300"
+              ? "bg-[#F5C94A] border-[#F5C94A] text-[#181A1E]"
+              : "bg-white border-[#EAEAEA]"
           }`}
           aria-label={`Toggle ${DAY_NAMES[config.dayOfWeek]}`}
         >
-          {config.isWorkingDay && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+          {config.isWorkingDay && (
+            <Check className="w-3 h-3 text-[#181A1E]" strokeWidth={3} />
+          )}
         </button>
         <div>
           <p
             className={`text-sm font-bold ${
-              config.isWorkingDay ? "text-slate-900" : "text-slate-400"
+              config.isWorkingDay ? "text-[#181A1E]" : "text-[#73767D]"
             }`}
           >
             {DAY_NAMES[config.dayOfWeek]}
           </p>
           {isFriday && (
-            <p className="text-[10px] text-amber-600 font-semibold mt-0.5">
+            <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-[#FBF3DC] text-[#5B4712] border border-[#F2E2B6] font-semibold mt-1">
               🕌 Jummah day
-            </p>
+            </span>
           )}
           {isSatSun && (
-            <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+            <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-[#F3F1E8] text-[#262930] font-medium mt-1">
               Weekend
-            </p>
+            </span>
           )}
         </div>
       </div>
@@ -161,7 +163,7 @@ function DayRow({ config, onChange, onSave, saveState }: DayRowProps) {
         </div>
 
         {/* Divider */}
-        <div className="hidden sm:flex items-center pb-1 text-slate-300 text-xs font-bold select-none">
+        <div className="hidden sm:flex items-center pb-1 text-[#73767D] text-xs font-bold select-none">
           |
         </div>
 
@@ -192,12 +194,12 @@ function DayRow({ config, onChange, onSave, saveState }: DayRowProps) {
             type="button"
             onClick={() => onSave(config.dayOfWeek)}
             disabled={saveState === "saving"}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition focus:outline-none focus:ring-2 focus:ring-emerald-500/40 ${
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs transition ${
               saveState === "saved"
-                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                ? "bg-[#E3F5EC] text-[#184E37] border border-[#CBEAD9] font-semibold rounded-xl"
                 : saveState === "error"
-                ? "bg-red-50 text-red-700 border border-red-200"
-                : "bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95"
+                ? "bg-[#FAD4D6] text-[#9E2A2B] border border-[#F5BFC2] font-semibold rounded-xl"
+                : "bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl"
             }`}
           >
             {saveState === "saving" ? (
@@ -317,7 +319,7 @@ export default function AvailabilityPage() {
   if (loading) {
     return (
       <div className="py-24 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#181A1E]" />
       </div>
     );
   }
@@ -330,14 +332,14 @@ export default function AvailabilityPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <Clock className="w-4 h-4 text-emerald-700" />
+            <div className="w-8 h-8 rounded-xl bg-[#FBF3DC] border border-[#F2E2B6] flex items-center justify-center">
+              <Clock className="w-4 h-4 text-[#5B4712]" />
             </div>
-            <h1 className="text-2xl font-extrabold text-slate-950 tracking-tight">
+            <h1 className="text-2xl font-extrabold text-[#181A1E] tracking-tight">
               Availability
             </h1>
           </div>
-          <p className="text-xs text-slate-500 mt-1 ml-10">
+          <p className="text-xs text-[#73767D] mt-1 ml-10">
             Configure your weekly business hours. Bangladesh defaults applied.
           </p>
         </div>
@@ -346,7 +348,7 @@ export default function AvailabilityPage() {
           type="button"
           onClick={saveAll}
           disabled={savingAll}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 active:scale-95 transition focus:outline-none focus:ring-2 focus:ring-emerald-500/40 disabled:opacity-60"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl text-xs transition disabled:opacity-60"
         >
           {savingAll ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -358,21 +360,21 @@ export default function AvailabilityPage() {
       </div>
 
       {/* Summary bar */}
-      <div className="flex items-center gap-4 px-5 py-3 bg-white rounded-xl border border-slate-200/80 shadow-xs text-xs text-slate-600">
-        <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+      <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] flex items-center gap-4 text-xs text-[#73767D]">
+        <Calendar className="w-4 h-4 text-[#73767D] shrink-0" />
         <span>
-          <span className="font-bold text-slate-900">{workingDays}</span> working
+          <span className="font-bold text-[#181A1E]">{workingDays}</span> working
           {workingDays === 1 ? " day" : " days"} per week ·{" "}
-          <span className="font-bold text-slate-900">{7 - workingDays}</span> day
+          <span className="font-bold text-[#181A1E]">{7 - workingDays}</span> day
           {7 - workingDays === 1 ? "" : "s"} off
         </span>
-        <span className="ml-auto text-[11px] text-slate-400">
+        <span className="ml-auto text-[11px] text-[#73767D]">
           Timezone: Asia/Dhaka (UTC+6)
         </span>
       </div>
 
       {/* Day rows */}
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         {days.map((config) => (
           <DayRow
             key={config.dayOfWeek}
@@ -384,7 +386,7 @@ export default function AvailabilityPage() {
         ))}
       </div>
 
-      <p className="text-[11px] text-slate-400 text-center">
+      <p className="text-[11px] text-[#73767D] text-center">
         Changes apply to all future bookings. Existing confirmed bookings are
         unaffected.
       </p>

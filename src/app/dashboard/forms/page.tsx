@@ -110,41 +110,41 @@ function FieldRow({
   onMove: (dir: "up" | "down") => void;
 }) {
   const inp =
-    "px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 bg-white";
+    "px-2.5 py-1.5 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-xs text-[#181A1E] focus:border-[#F5C94A] focus:outline-none";
 
   return (
-    <div className="flex items-start gap-3 p-4 bg-white rounded-xl border border-slate-200/80 group hover:border-emerald-200 transition">
+    <div className="flex items-start gap-3 bg-[#F8F8FA] rounded-[14px] border border-[#EAEAEA] p-4 group transition">
       {/* Drag handle / order */}
       <div className="flex flex-col items-center gap-1 pt-0.5">
-        <GripVertical className="w-4 h-4 text-slate-300" />
+        <GripVertical className="w-4 h-4 text-[#73767D]" />
         <button
           type="button"
           onClick={() => onMove("up")}
           disabled={index === 0}
-          className="disabled:opacity-20 hover:text-emerald-600"
+          className="disabled:opacity-20 text-[#73767D] hover:text-[#181A1E]"
         >
-          <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+          <ChevronUp className="w-3.5 h-3.5" />
         </button>
         <button
           type="button"
           onClick={() => onMove("down")}
           disabled={index === total - 1}
-          className="disabled:opacity-20 hover:text-emerald-600"
+          className="disabled:opacity-20 text-[#73767D] hover:text-[#181A1E]"
         >
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+          <ChevronDown className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {/* Fields */}
       <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="lg:col-span-1">
-          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+          <label className="block text-[10px] font-bold text-[#73767D] uppercase mb-1">
             Field Type
           </label>
           <select
             value={field.type}
             onChange={(e) => onChange({ ...field, type: e.target.value })}
-            className={inp + " w-full"}
+            className={inp + " w-full bg-white"}
           >
             {FIELD_TYPES.map((t) => (
               <option key={t.value} value={t.value}>
@@ -154,7 +154,7 @@ function FieldRow({
           </select>
         </div>
         <div className="lg:col-span-1">
-          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+          <label className="block text-[10px] font-bold text-[#73767D] uppercase mb-1">
             Label *
           </label>
           <input
@@ -162,11 +162,11 @@ function FieldRow({
             value={field.label}
             onChange={(e) => onChange({ ...field, label: e.target.value })}
             placeholder="e.g. Your Name"
-            className={inp + " w-full"}
+            className={inp + " w-full bg-white"}
           />
         </div>
         <div className="lg:col-span-1">
-          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+          <label className="block text-[10px] font-bold text-[#73767D] uppercase mb-1">
             Placeholder
           </label>
           <input
@@ -174,11 +174,11 @@ function FieldRow({
             value={field.placeholder}
             onChange={(e) => onChange({ ...field, placeholder: e.target.value })}
             placeholder="Optional hint text"
-            className={inp + " w-full"}
+            className={inp + " w-full bg-white"}
           />
         </div>
         <div className="lg:col-span-1">
-          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+          <label className="block text-[10px] font-bold text-[#73767D] uppercase mb-1">
             Help Text
           </label>
           <input
@@ -186,7 +186,7 @@ function FieldRow({
             value={field.helpText}
             onChange={(e) => onChange({ ...field, helpText: e.target.value })}
             placeholder="Optional guidance"
-            className={inp + " w-full"}
+            className={inp + " w-full bg-white"}
           />
         </div>
       </div>
@@ -200,18 +200,18 @@ function FieldRow({
           className="flex flex-col items-center gap-0.5"
         >
           {field.required ? (
-            <ToggleRight className="w-5 h-5 text-emerald-600" />
+            <ToggleRight className="w-5 h-5 text-[#184E37]" />
           ) : (
-            <ToggleLeft className="w-5 h-5 text-slate-300" />
+            <ToggleLeft className="w-5 h-5 text-[#73767D]" />
           )}
-          <span className="text-[9px] font-bold text-slate-400 uppercase">
+          <span className="text-[9px] font-bold text-[#73767D] uppercase">
             {field.required ? "Req" : "Opt"}
           </span>
         </button>
         <button
           type="button"
           onClick={onRemove}
-          className="text-slate-300 hover:text-red-500 transition"
+          className="text-[#73767D] hover:text-[#9E2A2B] transition"
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -333,28 +333,31 @@ function FormBuilder({
     }
   }
 
+  const inputCls =
+    "w-full px-3 py-2 bg-[#F8F8FA] border border-[#EAEAEA] rounded-xl text-xs text-[#181A1E] focus:border-[#F5C94A] focus:outline-none";
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
           onClick={onBack}
-          className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition"
+          className="p-2.5 bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl transition"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-extrabold text-slate-950 tracking-tight">
+          <h1 className="text-2xl font-extrabold text-[#181A1E] tracking-tight">
             {isNew ? "Create New Form" : `Edit: ${form?.name}`}
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-[#73767D] mt-0.5">
             {isNew ? "Build your booking form, then embed it on your website." : "Update form fields and settings."}
           </p>
         </div>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition disabled:opacity-60"
+          className="inline-flex items-center px-5 py-2.5 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] text-xs font-semibold rounded-xl transition disabled:opacity-60"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
           {saving ? "Saving…" : isNew ? "Create Form" : "Save Changes"}
@@ -362,20 +365,20 @@ function FormBuilder({
       </div>
 
       {error && (
-        <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-semibold">
+        <div className="px-4 py-3 bg-[#FAD4D6] border border-[#F5BFC2] rounded-xl text-xs text-[#9E2A2B] font-semibold">
           {error}
         </div>
       )}
 
       {/* Form Meta */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 space-y-4">
+      <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] space-y-4">
         <div className="flex items-center gap-2 mb-2">
-          <Settings className="w-4 h-4 text-slate-400" />
-          <h2 className="text-sm font-bold text-slate-800">Form Settings</h2>
+          <Settings className="w-4 h-4 text-[#73767D]" />
+          <h2 className="text-sm font-bold text-[#181A1E]">Form Settings</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label className="block text-xs font-semibold text-[#73767D] uppercase mb-1">
               Internal Name *
             </label>
             <input
@@ -383,11 +386,11 @@ function FormBuilder({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Dental Appointment Form"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className={inputCls}
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label className="block text-xs font-semibold text-[#73767D] uppercase mb-1">
               Customer-Facing Title *
             </label>
             <input
@@ -395,17 +398,17 @@ function FormBuilder({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Book an Appointment"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className={inputCls}
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label className="block text-xs font-semibold text-[#73767D] uppercase mb-1">
               Form Type
             </label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className={inputCls}
             >
               {FORM_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -416,7 +419,7 @@ function FormBuilder({
           </div>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+          <label className="block text-xs font-semibold text-[#73767D] uppercase mb-1">
             Description
           </label>
           <textarea
@@ -424,19 +427,19 @@ function FormBuilder({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Optional subtitle shown to customers"
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none"
+            className={`${inputCls} resize-none`}
           />
         </div>
       </div>
 
       {/* Visual Theme & Branding Customizer */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 space-y-4">
-        <h2 className="text-sm font-bold text-slate-800">
+      <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] space-y-4">
+        <h2 className="text-sm font-bold text-[#181A1E]">
           Visual Theme &amp; Widget Branding
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label className="block text-xs font-semibold text-[#73767D] uppercase mb-1">
               Brand Accent Color
             </label>
             <div className="flex items-center gap-2">
@@ -444,24 +447,24 @@ function FormBuilder({
                 type="color"
                 value={primaryColor}
                 onChange={(e) => setPrimaryColor(e.target.value)}
-                className="w-9 h-9 rounded-lg border border-slate-200 cursor-pointer"
+                className="w-9 h-9 rounded-xl border border-[#EAEAEA] cursor-pointer bg-[#F8F8FA]"
               />
               <input
                 type="text"
                 value={primaryColor}
                 onChange={(e) => setPrimaryColor(e.target.value)}
-                className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs font-mono"
+                className={`${inputCls} flex-1 font-mono`}
               />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label className="block text-xs font-semibold text-[#73767D] uppercase mb-1">
               Corner Radius
             </label>
             <select
               value={borderRadius}
               onChange={(e) => setBorderRadius(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              className={inputCls}
             >
               <option value="4px">Sharp (4px)</option>
               <option value="8px">Standard (8px)</option>
@@ -470,18 +473,18 @@ function FormBuilder({
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+            <label className="block text-xs font-semibold text-[#73767D] uppercase mb-1">
               Submit Button Label
             </label>
             <input
               type="text"
               value={buttonText}
               onChange={(e) => setButtonText(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+              className={inputCls}
             />
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+            <label className="block text-[10px] font-bold text-[#73767D] uppercase mb-1">
               Live Button Preview
             </label>
             <div
@@ -489,7 +492,7 @@ function FormBuilder({
                 backgroundColor: primaryColor,
                 borderRadius,
               }}
-              className="w-full py-2.5 px-4 text-white font-bold text-xs text-center shadow-xs transition"
+              className="w-full py-2.5 px-4 text-white font-bold text-xs text-center transition"
             >
               {buttonText || "Confirm Booking"}
             </div>
@@ -498,16 +501,16 @@ function FormBuilder({
       </div>
 
       {/* Field Builder */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 space-y-4">
+      <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-slate-800">
+          <h2 className="text-sm font-bold text-[#181A1E]">
             Form Fields
-            <span className="ml-2 text-xs font-normal text-slate-400">({fields.length} fields)</span>
+            <span className="ml-2 text-xs font-normal text-[#73767D]">({fields.length} fields)</span>
           </h2>
           <button
             type="button"
             onClick={addField}
-            className="inline-flex items-center px-3 py-1.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 text-xs font-semibold rounded-lg transition"
+            className="inline-flex items-center px-3 py-1.5 bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] text-xs font-medium rounded-xl transition"
           >
             <Plus className="w-3.5 h-3.5 mr-1" />
             Add Field
@@ -515,8 +518,8 @@ function FormBuilder({
         </div>
 
         {fields.length === 0 ? (
-          <div className="py-10 text-center text-slate-400 text-xs border-2 border-dashed border-slate-200 rounded-xl">
-            No fields yet. Click "Add Field" to build your form.
+          <div className="py-10 text-center text-[#73767D] text-xs bg-[#F8F8FA] rounded-[14px] border border-[#EAEAEA] p-4">
+            No fields yet. Click &ldquo;Add Field&rdquo; to build your form.
           </div>
         ) : (
           <div className="space-y-2">
@@ -534,11 +537,11 @@ function FormBuilder({
           </div>
         )}
 
-        <div className="pt-2 border-t border-slate-100">
+        <div className="pt-2 border-t border-[#EAEAEA]">
           <button
             type="button"
             onClick={addField}
-            className="w-full py-3 border-2 border-dashed border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/30 rounded-xl text-xs font-semibold text-slate-400 hover:text-emerald-600 transition flex items-center justify-center gap-2"
+            className="w-full py-3 bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] rounded-xl text-xs font-medium transition flex items-center justify-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Add Another Field
@@ -632,16 +635,16 @@ export default function FormsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-950 tracking-tight">
+          <h1 className="text-2xl font-extrabold text-[#181A1E] tracking-tight">
             Forms &amp; Distribution
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-[#73767D] mt-1">
             Build booking forms and embed them on your website, WordPress, or share direct links.
           </p>
         </div>
         <button
           onClick={() => { setEditingForm(null); setView("builder"); }}
-          className="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition"
+          className="inline-flex items-center px-4 py-2 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] text-xs font-semibold rounded-xl transition"
         >
           <Plus className="w-4 h-4 mr-1.5" />
           Create New Form
@@ -650,20 +653,20 @@ export default function FormsPage() {
 
       {loading ? (
         <div className="py-20 flex justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#181A1E]" />
         </div>
       ) : forms.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-16 text-center space-y-4">
-          <FileCode className="w-12 h-12 text-slate-200 mx-auto" />
+        <div className="bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] py-16 text-center space-y-4">
+          <FileCode className="w-12 h-12 text-[#73767D] mx-auto" />
           <div>
-            <h3 className="text-sm font-bold text-slate-800">No forms yet</h3>
-            <p className="text-xs text-slate-400 mt-1">
+            <h3 className="text-sm font-bold text-[#181A1E]">No forms yet</h3>
+            <p className="text-xs text-[#73767D] mt-1">
               Create your first booking form and embed it on your website.
             </p>
           </div>
           <button
             onClick={() => { setEditingForm(null); setView("builder"); }}
-            className="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl"
+            className="inline-flex items-center px-4 py-2 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] text-xs font-semibold rounded-xl"
           >
             <Plus className="w-4 h-4 mr-1.5" />
             Create First Form
@@ -681,68 +684,68 @@ export default function FormsPage() {
             return (
               <div
                 key={form.id}
-                className={`bg-white rounded-2xl border shadow-xs space-y-5 p-6 transition ${
-                  isDisabled ? "border-slate-100 opacity-70" : "border-slate-200/80"
+                className={`bg-white rounded-[20px] border border-[#EAEAEA] p-6 shadow-[0_2px_16px_-4px_rgba(24,24,27,0.04)] space-y-5 transition ${
+                  isDisabled ? "opacity-70" : ""
                 }`}
               >
                 {/* Form header */}
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-4 border-b border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-4 border-b border-[#EAEAEA]">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-base font-bold text-slate-900">{form.name}</h2>
+                      <h2 className="text-base font-bold text-[#181A1E]">{form.name}</h2>
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                           form.status === "PUBLISHED"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-slate-100 text-slate-500"
+                            ? "bg-[#E3F5EC] text-[#184E37] border border-[#CBEAD9]"
+                            : "bg-[#FBF3DC] text-[#5B4712] border border-[#F2E2B6]"
                         }`}
                       >
                         {form.status}
                       </span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E2F2FA] text-[#174A67] border border-[#C4E3F5]">
                         {form.type.replace("_", " ")}
                       </span>
                     </div>
                     {form.description && (
-                      <p className="text-xs text-slate-500 mt-0.5">{form.description}</p>
+                      <p className="text-xs text-[#73767D] mt-0.5">{form.description}</p>
                     )}
                   </div>
 
                   {/* Actions + analytics */}
                   <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="flex items-center text-slate-500">
-                      <Eye className="w-3.5 h-3.5 mr-1 text-slate-400" />
-                      <strong>{form.viewCount || 0}</strong>&nbsp;views
+                    <span className="flex items-center text-[#73767D]">
+                      <Eye className="w-3.5 h-3.5 mr-1 text-[#73767D]" />
+                      <strong className="text-[#181A1E]">{form.viewCount || 0}</strong>&nbsp;views
                     </span>
-                    <span className="flex items-center text-slate-500">
-                      <CheckCircle className="w-3.5 h-3.5 mr-1 text-emerald-500" />
-                      <strong>{form._count?.submissions || form.submitCount || 0}</strong>&nbsp;submissions
+                    <span className="flex items-center text-[#73767D]">
+                      <CheckCircle className="w-3.5 h-3.5 mr-1 text-[#184E37]" />
+                      <strong className="text-[#181A1E]">{form._count?.submissions || form.submitCount || 0}</strong>&nbsp;submissions
                     </span>
 
                     <div className="flex items-center gap-1.5 ml-2">
                       <button
                         onClick={() => { setEditingForm(form); setView("builder"); }}
                         title="Edit form"
-                        className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition"
+                        className="p-1.5 bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl transition"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => toggleStatus(form)}
                         title={isDisabled ? "Enable form" : "Disable form"}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 transition"
+                        className="p-1.5 bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl transition"
                       >
                         {isDisabled ? (
-                          <ToggleLeft className="w-4 h-4 text-slate-400" />
+                          <ToggleLeft className="w-4 h-4 text-[#73767D]" />
                         ) : (
-                          <ToggleRight className="w-4 h-4 text-emerald-600" />
+                          <ToggleRight className="w-4 h-4 text-[#184E37]" />
                         )}
                       </button>
                       <button
                         onClick={() => deleteForm(form.id)}
                         disabled={deletingId === form.id}
                         title="Disable form"
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition"
+                        className="p-1.5 rounded-xl bg-[#F3F1E8] hover:bg-[#FAD4D6] text-[#73767D] hover:text-[#9E2A2B] transition"
                       >
                         {deletingId === form.id ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -759,14 +762,14 @@ export default function FormsPage() {
                   {form.fields.slice(0, 8).map((f) => (
                     <span
                       key={f.fieldId}
-                      className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold"
+                      className="px-2.5 py-0.5 rounded-full bg-[#F8F8FA] border border-[#EAEAEA] text-[#181A1E] text-[10px] font-semibold"
                     >
                       {f.label || f.type}
-                      {f.required && <span className="text-red-400 ml-0.5">*</span>}
+                      {f.required && <span className="text-[#9E2A2B] ml-0.5">*</span>}
                     </span>
                   ))}
                   {form.fields.length > 8 && (
-                    <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-400 text-[10px]">
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#F8F8FA] border border-[#EAEAEA] text-[#73767D] text-[10px]">
                       +{form.fields.length - 8} more
                     </span>
                   )}
@@ -775,58 +778,58 @@ export default function FormsPage() {
                 {/* Installation codes */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* JS embed */}
-                  <div className="bg-slate-900 rounded-xl p-4 space-y-2">
+                  <div className="bg-[#F8F8FA] rounded-[14px] border border-[#EAEAEA] p-4 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-bold text-emerald-400">
+                      <span className="text-xs font-bold text-[#181A1E]">
                         JavaScript Embed
                       </span>
                       <button
                         onClick={() => copyText(jsEmbed, `js-${form.id}`)}
-                        className="text-xs inline-flex items-center gap-1 text-slate-400 hover:text-white"
+                        className="text-xs inline-flex items-center gap-1 px-2.5 py-1 bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl"
                       >
                         {copiedKey === `js-${form.id}` ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <Check className="w-3.5 h-3.5 text-[#184E37]" />
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
                         {copiedKey === `js-${form.id}` ? "Copied!" : "Copy"}
                       </button>
                     </div>
-                    <code className="text-[11px] font-mono text-slate-300 block bg-slate-950 p-2.5 rounded-lg border border-slate-800 break-all select-all">
+                    <code className="text-[11px] font-mono text-[#181A1E] block bg-white p-2.5 rounded-xl border border-[#EAEAEA] break-all select-all">
                       {jsEmbed}
                     </code>
-                    <p className="text-[10px] text-slate-500">Paste in your website HTML, Shopify, Webflow, Wix.</p>
+                    <p className="text-[10px] text-[#73767D]">Paste in your website HTML, Shopify, Webflow, Wix.</p>
                   </div>
 
                   {/* WordPress shortcode */}
-                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-2">
+                  <div className="bg-[#F8F8FA] rounded-[14px] border border-[#EAEAEA] p-4 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-700">WordPress Shortcode</span>
+                      <span className="text-xs font-bold text-[#181A1E]">WordPress Shortcode</span>
                       <button
                         onClick={() => copyText(wpShortcode, `wp-${form.id}`)}
-                        className="text-xs inline-flex items-center gap-1 text-slate-500 hover:text-slate-900"
+                        className="text-xs inline-flex items-center gap-1 px-2.5 py-1 bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl"
                       >
                         {copiedKey === `wp-${form.id}` ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <Check className="w-3.5 h-3.5 text-[#184E37]" />
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
                         {copiedKey === `wp-${form.id}` ? "Copied!" : "Copy"}
                       </button>
                     </div>
-                    <code className="text-xs font-mono text-slate-900 font-bold block bg-white p-2.5 rounded-lg border border-slate-200 select-all">
+                    <code className="text-xs font-mono text-[#181A1E] font-bold block bg-white p-2.5 rounded-xl border border-[#EAEAEA] select-all">
                       {wpShortcode}
                     </code>
-                    <p className="text-[10px] text-slate-400">Use in our WordPress plugin or Elementor widget.</p>
+                    <p className="text-[10px] text-[#73767D]">Use in our WordPress plugin or Elementor widget.</p>
                   </div>
                 </div>
 
                 {/* Direct link + QR */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-[#EAEAEA]">
                   <div className="flex items-center gap-2 min-w-0">
-                    <Globe className="w-4 h-4 text-slate-400 shrink-0" />
-                    <span className="text-xs text-slate-500 truncate">
-                      <strong className="text-slate-700">{publicUrl}</strong>
+                    <Globe className="w-4 h-4 text-[#73767D] shrink-0" />
+                    <span className="text-xs text-[#73767D] truncate">
+                      <strong className="text-[#181A1E]">{publicUrl}</strong>
                     </span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -834,7 +837,7 @@ export default function FormsPage() {
                       href={publicUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      className="inline-flex items-center px-3 py-1.5 bg-[#F3F1E8] hover:bg-[#EAE6D7] text-[#262930] font-medium rounded-xl text-xs"
                     >
                       <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
                       Open Live Form
@@ -843,7 +846,7 @@ export default function FormsPage() {
                       href={qrUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold hover:bg-emerald-100"
+                      className="inline-flex items-center px-3 py-1.5 bg-[#F5C94A] hover:bg-[#EBBF3E] text-[#181A1E] font-semibold rounded-xl text-xs"
                     >
                       <QrCode className="w-3.5 h-3.5 mr-1.5" />
                       QR Code
